@@ -1,0 +1,11 @@
+repos:
+  - repo: https://github.com/pycqa/flake8
+    rev: ''
+    hooks:
+      - id: flake8
+
+  - repo: https://github.com/pycqa/isort
+    rev: ''
+    hooks:
+      - id: isort
+        name: isort (python)

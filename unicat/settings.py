@@ -1,6 +1,8 @@
 import os
-
+import sys
+from datetime import timedelta
 from pathlib import Path
+
 from dotenv import dotenv_values
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -9,10 +11,14 @@ config = {
     **dotenv_values(".env"),
     **dotenv_values(".env.local"),
     **dotenv_values(".env.development.local"),
-    **dotenv_values(".env.test.local"),
     **dotenv_values(".env.production.local"),
     **os.environ,
 }
+
+if 'test' in sys.argv:
+    config = {
+        **dotenv_values(".env.test.local"),
+    }
 
 
 SECRET_KEY = config['DJANGO_APP_SECRET_KEY']
@@ -20,6 +26,10 @@ SECRET_KEY = config['DJANGO_APP_SECRET_KEY']
 DEBUG = int(config['DJANGO_APP_DEBUG'])
 
 ALLOWED_HOSTS = config.get('DJANGO_APP_ALLOWED_HOSTS').split(' ')
+
+AUTH_USER_MODEL = 'users.User'
+
+PASSWORD_HASHERS = config.get('DJANGO_APP_PASSWORD_HASHERS').split(' ')
 
 
 INSTALLED_APPS = [
@@ -29,6 +39,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'aldjemy',
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
+
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -63,29 +80,47 @@ WSGI_APPLICATION = 'unicat.wsgi.application'
 
 
 DATABASES = {
-    'default': {
+    'default': {},
+    'master': {
         'ENGINE': config['DJANGO_APP_DATABASE_SQL_ENGINE'],
-        'NAME': config['DJANGO_APP_DATABASE_SQL_DATABASE'],
-        'USER': config['DJANGO_APP_DATABASE_SQL_USER'],
-        'PASSWORD': config['DJANGO_APP_DATABASE_SQL_PASSWORD'],
-        'HOST': config['DJANGO_APP_DATABASE_SQL_HOST'],
-        'PORT': config['DJANGO_APP_DATABASE_SQL_PORT'],
-    }
+        'NAME': config['DJANGO_APP_DATABASE_SQL_MASTER_DATABASE'],
+        'USER': config['DJANGO_APP_DATABASE_SQL_MASTER_USER'],
+        'PASSWORD': config['DJANGO_APP_DATABASE_SQL_MASTER_PASSWORD'],
+        'HOST': config['DJANGO_APP_DATABASE_SQL_MASTER_HOST'],
+        'PORT': config['DJANGO_APP_DATABASE_SQL_MASTER_PORT'],
+        'TEST': {
+            'DEPENDENCIES': [],
+        },
+    },
+    'slave': {
+        'ENGINE': config['DJANGO_APP_DATABASE_SQL_ENGINE'],
+        'NAME': config['DJANGO_APP_DATABASE_SQL_REPLICA_DATABASE'],
+        'USER': config['DJANGO_APP_DATABASE_SQL_REPLICA_USER'],
+        'PASSWORD': config['DJANGO_APP_DATABASE_SQL_REPLICA_PASSWORD'],
+        'HOST': config['DJANGO_APP_DATABASE_SQL_REPLICA_HOST'],
+        'PORT': config['DJANGO_APP_DATABASE_SQL_REPLICA_PORT'],
+    },
 }
+
+DATABASE_ROUTERS = [config['DJANGO_APP_DATABASE_ROUTER']]
 
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'NAME': 'django.contrib.auth.password_validation'
+                '.UserAttributeSimilarityValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'NAME': 'django.contrib.auth.password_validation'
+                '.MinimumLengthValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        'NAME': 'django.contrib.auth.password_validation'
+                '.CommonPasswordValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        'NAME': 'django.contrib.auth.password_validation'
+                '.NumericPasswordValidator',
     },
 ]
 
@@ -103,3 +138,43 @@ STATIC_URL = 'static/'
 
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    'ROTATE_REFRESH_TOKENS': False,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': False,
+
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+    'JWK_URL': None,
+    'LEEWAY': 0,
+
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.'
+                                'default_user_authentication_rule',
+
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+    'TOKEN_USER_CLASS': 'rest_framework_simplejwt.models.TokenUser',
+
+    'JTI_CLAIM': 'jti',
+
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+}

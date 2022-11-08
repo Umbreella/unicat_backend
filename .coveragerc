@@ -1,0 +1,31 @@
+[run]
+source = .
+command_line = manage.py test
+omit =
+    ./unicat/*,
+    ./venv/*,
+    *tests*,
+    *apps.py,
+    *manage.py,
+    *__init__.py,
+    *migrations*,
+    *asgi*,
+    *wsgi*,
+    *admin.py,
+    *urls.py,
+    *settings.py
+
+[report]
+omit =
+    ./unicat/*,
+    ./venv/*,
+    *tests*,
+    *apps.py,
+    *manage.py,
+    *__init__.py,
+    *migrations*,
+    *asgi*,
+    *wsgi*,
+    *admin.py,
+    *urls.py,
+    *settings.py
