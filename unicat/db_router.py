@@ -15,11 +15,6 @@ class PrimaryDataBaseRouter:
         return None
 
     # def allow_migrate(self, db, app_label, model_name=None, **hints):
-    #     print(db)
-    #     print(app_label)
-    #     print(model_name)
-    #     print(hints)
-    #
     #     return False
 
 

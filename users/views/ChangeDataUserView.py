@@ -1,16 +1,16 @@
 from rest_framework import status
-from rest_framework.generics import CreateAPIView
+from rest_framework.generics import UpdateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from ..serializers.ChangeDataUserSerializer import ChangeDataUserSerializer
 
 
-class ChangeDataUserView(CreateAPIView):
+class ChangeDataUserView(UpdateAPIView):
     serializer_class = ChangeDataUserSerializer
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, *args, **kwargs):
+    def put(self, request, *args, **kwargs):
         data = request.data
         current_user = request.user
 

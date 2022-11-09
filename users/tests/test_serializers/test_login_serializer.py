@@ -72,7 +72,7 @@ class UserLoginSerializerTest(TestCase):
 
         self.assertEqual(excepted_errors, real_errors)
 
-    def test_When_FiledsLengthGreaterThan128_Should_ErrorNotMaxLenth(self):
+    def test_When_FiledsLengthGreaterThan128_Should_ErrorMaxLength(self):
         data = {
             'email': 'q' * 124 + '@a.ru',
             'password': 'q' * 129

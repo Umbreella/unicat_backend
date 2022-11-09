@@ -15,15 +15,59 @@ class UserRegistrationSerializerTest(TestCase):
         User.objects.create_user(email='test@email.com', password='password',
                                  first_name='q' * 50, last_name='q' * 50)
 
-    def setUp(self):
-        self.data = {
+        cls.data = {
             'first_name': 'q' * 50,
             'last_name': 'q' * 50,
             'email': 'test@email.com',
             'password': 'password'
         }
 
-    def test_When_FiledsLengthGreaterThan128_Should_ErrorNotMaxLenth(self):
+    def test_When_EmptyFirstAndLastName_Should_ErrorRequiredFields(self):
+        data = self.data
+        data.pop('first_name')
+        data.pop('last_name')
+
+        serializer = RegistrationUserSerializer(data=data)
+        serializer.is_valid()
+
+        excepted_errors = {
+            'first_name': [
+                ErrorDetail(string='This field is required.', code='required')
+
+            ],
+            'last_name': [
+                ErrorDetail(string='This field is required.', code='required')
+            ],
+        }
+        real_errors = serializer.errors
+
+        self.assertEqual(excepted_errors, real_errors)
+
+    def test_When_BlankFieldsFirstAndLastName_Should_ErrorBlankFields(self):
+        data = self.data
+        data.update({
+            'first_name': '',
+            'last_name': ''
+        })
+
+        serializer = RegistrationUserSerializer(data=data)
+        serializer.is_valid()
+
+        excepted_errors = {
+            'first_name': [
+                ErrorDetail(string='This field may not be blank.',
+                            code='blank')
+            ],
+            'last_name': [
+                ErrorDetail(string='This field may not be blank.',
+                            code='blank')
+            ],
+        }
+        real_errors = serializer.errors
+
+        self.assertEqual(excepted_errors, real_errors)
+
+    def test_When_FieldsLengthGreaterThan128_Should_ErrorNotMaxLength(self):
         data = self.data
         data.update({
             'first_name': 'q' * 129,
@@ -50,11 +94,8 @@ class UserRegistrationSerializerTest(TestCase):
 
         self.assertEqual(excepted_errors, real_errors)
 
-    def test_When_DuplicateUserData_Should_ErrorCantCreateUser(self):
+    def test_When_DuplicateUserData_Should_ErrorNotCreateUser(self):
         data = self.data
-        data.update({
-            'email': 'test@email.com'
-        })
 
         serializer = RegistrationUserSerializer(data=data)
         serializer.is_valid(raise_exception=True)
