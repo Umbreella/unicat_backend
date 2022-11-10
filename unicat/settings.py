@@ -20,7 +20,6 @@ if 'test' in sys.argv:
         **dotenv_values(".env.test.local"),
     }
 
-
 SECRET_KEY = config['DJANGO_APP_SECRET_KEY']
 
 DEBUG = int(config['DJANGO_APP_DEBUG'])
@@ -31,7 +30,6 @@ AUTH_USER_MODEL = 'users.User'
 
 PASSWORD_HASHERS = config.get('DJANGO_APP_PASSWORD_HASHERS').split(' ')
 
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -41,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'aldjemy',
+    'drf_yasg',
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
@@ -78,7 +77,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'unicat.wsgi.application'
 
-
 DATABASES = {
     'default': {},
     'master': {
@@ -104,7 +102,6 @@ DATABASES = {
 
 DATABASE_ROUTERS = [config['DJANGO_APP_DATABASE_ROUTER']]
 
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation'
@@ -124,7 +121,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
@@ -133,12 +129,9 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 STATIC_URL = 'static/'
 
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -177,4 +170,15 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
     'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+}
+
+SWAGGER_SETTINGS = {
+    'USE_SESSION_AUTH': False,
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    },
 }

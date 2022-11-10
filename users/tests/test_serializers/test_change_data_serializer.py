@@ -119,8 +119,6 @@ class UserChangeDataSerializerTest(TestCase):
         serializer.is_valid()
         serializer.save()
 
-        current_user.refresh_from_db()
-
         excepted_email = data['email']
         real_email = current_user.email
 
@@ -138,8 +136,6 @@ class UserChangeDataSerializerTest(TestCase):
         serializer.is_valid()
         serializer.save()
 
-        current_user.refresh_from_db()
-
         real_password = current_user.password
 
         self.assertNotEqual(old_password, real_password)
@@ -154,8 +150,6 @@ class UserChangeDataSerializerTest(TestCase):
                                               partial=True)
         serializer.is_valid()
         serializer.save()
-
-        current_user.refresh_from_db()
 
         excepted_first_name = data['first_name']
         real_first_name = current_user.first_name
@@ -172,8 +166,6 @@ class UserChangeDataSerializerTest(TestCase):
                                               partial=True)
         serializer.is_valid()
         serializer.save()
-
-        current_user.refresh_from_db()
 
         excepted_last_name = data['last_name']
         real_last_name = current_user.last_name
@@ -194,8 +186,6 @@ class UserChangeDataSerializerTest(TestCase):
                                               partial=True)
         serializer.is_valid()
         serializer.save()
-
-        current_user.refresh_from_db()
 
         excepted_email = data['email']
         real_email = current_user.email

@@ -3,6 +3,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from ...models import User
+from ...serializers.ChangeDataUserSerializer import ChangeDataUserSerializer
 
 
 class UserChangeDataViewTest(APITestCase):
@@ -52,7 +53,8 @@ class UserChangeDataViewTest(APITestCase):
 
         self.assertEqual(expected_status, real_status)
 
-    def test_When_PutMethod_Should_UpdateUserDataAndStatus204(self):
+    def test_When_PutMethodWithFullData_Should_ReturnNewUserDataAndStatus200(
+            self):
         data = {
             'email': 'test1@email.com',
             'password': 'password1',
@@ -64,11 +66,43 @@ class UserChangeDataViewTest(APITestCase):
         self.client.force_authenticate(user=self.user)
         response = self.client.put(url, data)
 
-        expected_status = status.HTTP_204_NO_CONTENT
+        expected_status = status.HTTP_200_OK
         real_status = response.status_code
 
-        excepted_keys = ['email', 'first_name', 'last_name']
-        real_keys = list(response.data.keys())
+        excepted_data = ChangeDataUserSerializer(self.user).data
+        real_data = response.data
 
         self.assertEqual(expected_status, real_status)
-        self.assertEqual(excepted_keys, real_keys)
+        self.assertEqual(excepted_data, real_data)
+
+    def test_When_PutMethodWithPartialData_Should_ErrorWithStatus400(self):
+        data = {
+            'email': 'test1@email.com',
+        }
+
+        url = reverse('change')
+        self.client.force_authenticate(user=self.user)
+        response = self.client.put(url, data)
+
+        expected_status = status.HTTP_400_BAD_REQUEST
+        real_status = response.status_code
+
+        self.assertEqual(expected_status, real_status)
+
+    def test_When_PatchMethod_Should_ReturnNewUserDataAndStatus200(self):
+        data = {
+            'email': 'test1@email.com',
+        }
+
+        url = reverse('change')
+        self.client.force_authenticate(user=self.user)
+        response = self.client.patch(url, data)
+
+        expected_status = status.HTTP_200_OK
+        real_status = response.status_code
+
+        excepted_data = ChangeDataUserSerializer(self.user).data
+        real_data = response.data
+
+        self.assertEqual(expected_status, real_status)
+        self.assertEqual(excepted_data, real_data)

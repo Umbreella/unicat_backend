@@ -19,7 +19,7 @@ class RegistrationUserSerializer(LoginUserSerializer):
         try:
             self.user = User.objects.create_user(**validated_data)
         except IntegrityError:
-            raise ValidationError("Unable to create user, invalid fields: "
-                                  "email or username")
+            raise ValidationError("Unable to create user, invalid field: "
+                                  "email")
 
         return self.user
