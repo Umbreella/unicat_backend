@@ -1,5 +1,5 @@
 from django.test import TestCase
-from rest_framework.exceptions import ErrorDetail, NotFound
+from rest_framework.exceptions import AuthenticationFailed, ErrorDetail
 
 from ...models import User
 from ...serializers.LoginUserSerializer import LoginUserSerializer
@@ -106,7 +106,7 @@ class UserLoginSerializerTest(TestCase):
 
         serializer = LoginUserSerializer(data=data)
 
-        with self.assertRaises(NotFound):
+        with self.assertRaises(AuthenticationFailed):
             serializer.is_valid(raise_exception=True)
 
     def test_When_CorrectUserData_Should_ReturnTokens(self):

@@ -3,6 +3,7 @@ from rest_framework_simplejwt.views import TokenBlacklistView, TokenRefreshView
 
 from .views.ChangeDataUserView import ChangeDataUserView
 from .views.LoginUserView import LoginUserView
+from .views.LogoutUserView import LogoutUserView
 from .views.RegistrationUserView import RegistrationUserView
 
 urlpatterns = [
@@ -10,5 +11,6 @@ urlpatterns = [
     path('token/refresh', TokenRefreshView.as_view(), name='token_refresh'),
     path('token/destroy', TokenBlacklistView.as_view(), name='token_destroy'),
     path('signup', RegistrationUserView.as_view(), name='signup'),
+    path('signout', LogoutUserView.as_view(), name='signout'),
     path('change', ChangeDataUserView.as_view(), name='change'),
 ]

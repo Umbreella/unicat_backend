@@ -1,6 +1,6 @@
 from django.contrib.auth import authenticate
 from rest_framework import serializers
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
 
 
@@ -19,7 +19,7 @@ class LoginUserSerializer(serializers.Serializer):
         self.user = authenticate(email=email, password=password)
 
         if not self.user:
-            raise NotFound("User not found.")
+            raise AuthenticationFailed('User not found')
 
         return attrs
 
