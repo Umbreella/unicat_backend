@@ -34,6 +34,8 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
+    path('prometheus/', include('django_prometheus.urls')),
+
     path('api/admin/', admin.site.urls),
     path('api/user/', include('users.urls')),
     path('api/course/', include('courses.urls')),
@@ -41,8 +43,9 @@ urlpatterns = [
     path('api/docs/', schema_view.with_ui('swagger', cache_timeout=0),
          name='schema-swagger-ui'),
 
-    path("graphql", csrf_exempt(GraphQLView.as_view(graphiql=False))),
-    path("graphql/docs", csrf_exempt(GraphQLView.as_view(graphiql=True))),
+    path("graphql", csrf_exempt(GraphQLView.as_view(graphiql=False)),
+         name='graphql'),
+    path("graphql/docs", GraphQLView.as_view(graphiql=True)),
 
     path('summernote/', include('django_summernote.urls')),
 ]

@@ -129,7 +129,7 @@ class UserChangeDataSerializerTest(TestCase):
             'password': 'w' * 50
         }
         current_user = self.user_1
-        old_password = current_user.password
+        expected_password = current_user.password
 
         serializer = ChangeDataUserSerializer(current_user, data=data,
                                               partial=True)
@@ -138,7 +138,7 @@ class UserChangeDataSerializerTest(TestCase):
 
         real_password = current_user.password
 
-        self.assertNotEqual(old_password, real_password)
+        self.assertNotEqual(expected_password, real_password)
 
     def test_When_NewUserFirstname_Should_UpdateOnlyUserFirstname(self):
         data = {
@@ -180,7 +180,7 @@ class UserChangeDataSerializerTest(TestCase):
             'password': 'password1'
         }
         current_user = self.user_1
-        old_password = current_user.password
+        expected_password = current_user.password
 
         serializer = ChangeDataUserSerializer(current_user, data=data,
                                               partial=True)
@@ -201,4 +201,4 @@ class UserChangeDataSerializerTest(TestCase):
         self.assertEqual(excepted_email, real_email)
         self.assertEqual(excepted_first_name, real_first_name)
         self.assertEqual(excepted_last_name, real_last_name)
-        self.assertNotEqual(old_password, real_password)
+        self.assertNotEqual(expected_password, real_password)

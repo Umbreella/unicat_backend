@@ -1,7 +1,7 @@
 from django.contrib.auth.hashers import make_password
-from django.db import IntegrityError
+from django.core.exceptions import ValidationError as djValidationError
 from rest_framework import serializers
-from rest_framework.serializers import ValidationError
+from rest_framework.exceptions import ValidationError
 
 
 class ChangeDataUserSerializer(serializers.Serializer):
@@ -26,8 +26,7 @@ class ChangeDataUserSerializer(serializers.Serializer):
 
         try:
             instance.save()
-        except IntegrityError:
-            raise ValidationError("You cannot duplicate the used email "
-                                  "address")
+        except djValidationError as _raise:
+            raise ValidationError(_raise)
 
         return instance

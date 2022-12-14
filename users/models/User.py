@@ -1,6 +1,9 @@
+import re
+
+from django.conf import settings
 from django.contrib.auth.base_user import AbstractBaseUser
+from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import PermissionsMixin
-# from django.contrib.auth.hashers import
 from django.db import models
 
 from .UserManager import UserManager
@@ -30,3 +33,28 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def get_email(self):
         return self.email
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+
+        current_password = self.password
+        hashed_password_pattern = self._get_hashed_pattern()
+
+        if not re.fullmatch(hashed_password_pattern, current_password):
+            hashed_password = make_password(current_password)
+            self.password = hashed_password
+
+        self.first_name = str(self.first_name).strip()
+        self.last_name = str(self.last_name).strip()
+        self.email = str(self.email).strip()
+
+        super().save(*args, **kwargs)
+
+    def _get_hashed_pattern(self):
+        current_hash_algorithm = settings.PASSWORD_HASHERS[0]
+
+        if 'PBKDF2PasswordHasher' in current_hash_algorithm:
+            return r'\w+[$]\d+[$]\w+[$].+'
+
+        if 'MD5PasswordHasher' in current_hash_algorithm:
+            return r'\w+[$]\w+[$].+'

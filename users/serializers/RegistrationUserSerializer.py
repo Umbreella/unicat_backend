@@ -1,4 +1,4 @@
-from django.db import IntegrityError
+from django.core.exceptions import ValidationError as djValidationError
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
@@ -18,8 +18,7 @@ class RegistrationUserSerializer(LoginUserSerializer):
     def create(self, validated_data):
         try:
             self.user = User.objects.create_user(**validated_data)
-        except IntegrityError:
-            raise ValidationError("Unable to create user, invalid field: "
-                                  "email")
+        except djValidationError as _raise:
+            raise ValidationError(_raise)
 
         return self.user

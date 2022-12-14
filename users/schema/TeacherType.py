@@ -29,4 +29,4 @@ class TeacherQuery(graphene.ObjectType):
     all_teachers = relay.ConnectionField(TeacherConnection)
 
     def resolve_all_teachers(root, info, **kwargs):
-        return Teacher.objects.all()
+        return Teacher.objects.select_related('user').all()

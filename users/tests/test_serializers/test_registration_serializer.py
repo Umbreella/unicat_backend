@@ -98,7 +98,7 @@ class UserRegistrationSerializerTest(TestCase):
         data = self.data
 
         serializer = RegistrationUserSerializer(data=data)
-        serializer.is_valid(raise_exception=True)
+        serializer.is_valid()
 
         with self.assertRaises(ValidationError):
             serializer.save()

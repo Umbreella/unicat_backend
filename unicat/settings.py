@@ -41,18 +41,23 @@ INSTALLED_APPS = [
     'aldjemy',
     "corsheaders",
     'django_filters',
+    'django_prometheus',
     'django_summernote',
     'drf_yasg',
     'graphene_django',
+    'import_export',
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
 
-    'users',
     'courses',
+    'events',
+    'users',
 ]
 
 MIDDLEWARE = [
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
+
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -61,7 +66,9 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
-    "corsheaders.middleware.CorsMiddleware",
+    'corsheaders.middleware.CorsMiddleware',
+
+    'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
 ROOT_URLCONF = 'unicat.urls'
@@ -109,6 +116,14 @@ DATABASES = {
 
 DATABASE_ROUTERS = [config['DJANGO_APP_DATABASE_ROUTER']]
 
+CACHES = {
+    'default': {
+        'BACKEND': config['DJANGO_APP_CACHES_BACKEND'],
+        'LOCATION': config['DJANGO_APP_CACHES_LOCATION'],
+        'TIMEOUT': 3600,
+    }
+}
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation'
@@ -153,7 +168,7 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': False,
+    'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': False,
 
@@ -220,5 +235,32 @@ CORS_ALLOW_HEADERS = [
 ]
 
 GRAPHENE = {
-    "SCHEMA": "unicat.graphql.schema"
+    'SCHEMA': 'unicat.graphql.schema',
+    'MIDDLEWARE': []
 }
+
+if DEBUG:
+    GRAPHENE.update({
+        'MIDDLEWARE': [
+            'graphene_django.debug.DjangoDebugMiddleware',
+        ]
+    })
+
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'file': {
+                'level': 'DEBUG',
+                'class': 'logging.FileHandler',
+                'filename': 'sql.log',
+            },
+        },
+        'loggers': {
+            'django.db.backends': {
+                'handlers': ['file'],
+                'level': 'DEBUG',
+                'propagate': True,
+            },
+        },
+    }

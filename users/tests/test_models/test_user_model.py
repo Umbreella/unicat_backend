@@ -4,38 +4,102 @@ from django.test import TestCase
 from ...models import User
 
 
-class UserModelTest(TestCase):
+class TeacherModelTest(TestCase):
     databases = {'master'}
 
-    def test_When_PasswordLengthGreaterThan128_Should_DontSaveUser(self):
-        user = User(password='q' * 130, email='test@test.test')
+    @classmethod
+    def setUpTestData(cls):
+        cls.data = {
+            'first_name': 'q' * 50,
+            'last_name': 'q' * 50,
+            'email': 'q' * 50 + '@q.qq',
+            'password': 'q' * 50,
+        }
 
-        with self.assertRaises(ValidationError):
-            user.full_clean()
+    def test_When_LengthDataGreaterThan128_Should_ErrorMaxLength(self):
+        data = self.data
+        data.update({
+            'first_name': 'q' * 130,
+            'last_name': 'q' * 130,
+            'email': 'q' * 125 + '@q.qq',
+            'password': 'q' * 130,
+        })
 
-    def test_When_EmailNotIsValid_Should_DontSaveUser(self):
-        user = User(password='q' * 50, email='testtesttest')
+        user = User(**data)
 
-        with self.assertRaises(ValidationError):
-            user.full_clean()
+        with self.assertRaises(ValidationError) as _raise:
+            user.save()
 
-    def test_When_EmailLengthGreater128_Should_DontSaveUser(self):
-        user = User(password='q' * 50, email='test' * 124 + '@ad.a')
+        expected_raise = {
+            'first_name': [
+                'Ensure this value has at most 128 characters (it has 130).'],
+            'last_name': [
+                'Ensure this value has at most 128 characters (it has 130).'],
+            'email': [
+                'Ensure this value has at most 128 characters (it has 130).'],
+            'password': [
+                'Ensure this value has at most 128 characters (it has 130).'],
+        }
+        real_raise = dict(_raise.exception)
 
-        with self.assertRaises(ValidationError):
-            user.full_clean()
+        self.assertEqual(expected_raise, real_raise)
 
-    def test_When_AllUserDataIsValid_Should_SaveUserAndReturnEmailAsStr(self):
-        user = User(password='q' * 50, email='test@test.test')
+    def test_When_EmailIsNotValid_Should_ErrorInvalidValue(self):
+        data = self.data
+        data.update({
+            'email': 'q' * 50
+        })
 
-        user.full_clean()
-        self.assertEqual('test@test.test', str(user))
+        user = User(**data)
 
-    def test_When_DuplicateEmail_Should_DontSaveDuplicateUser(self):
-        user = User(password='q' * 50, email='test@test.test')
+        with self.assertRaises(ValidationError) as _raise:
+            user.save()
+
+        expected_raise = {
+            'email': ['Enter a valid email address.'],
+        }
+        real_raise = dict(_raise.exception)
+
+        self.assertEqual(expected_raise, real_raise)
+
+    def test_When_AllDataIsValid_Should_SaveUserAndReturnFullNameAsStr(self):
+        data = self.data
+
+        user = User(**data)
         user.save()
 
-        duplicate_user = User(password='q' * 50, email='test@test.test')
+        expected_str = user.get_fullname()
+        real_str = str(user)
 
-        with self.assertRaises(ValidationError):
-            duplicate_user.full_clean()
+        self.assertEqual(expected_str, real_str)
+
+    def test_When_NamesIsNull_Should_ReturnEmailAsFullName(self):
+        data = self.data
+        data.pop('first_name')
+        data.pop('last_name')
+
+        user = User(**data)
+        user.save()
+
+        expected_str = user.get_email()
+        real_str = str(user)
+
+        self.assertEqual(expected_str, real_str)
+
+    def test_When_DuplicateUserEmail_Should_ErrorDuplicateUser(self):
+        data = self.data
+
+        user = User(**data)
+        user.save()
+
+        duplicate_user = User(**data)
+
+        with self.assertRaises(ValidationError) as _raise:
+            duplicate_user.save()
+
+        expected_raise = {
+            'email': ['User with this Email already exists.'],
+        }
+        real_raise = dict(_raise.exception)
+
+        self.assertEqual(expected_raise, real_raise)
