@@ -1,8 +1,7 @@
-import tempfile
-
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.test import TestCase
+from django.utils import timezone
 
 from users.models import User
 from users.models.Teacher import Teacher
@@ -17,7 +16,7 @@ class CourseModelTest(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        temporary_img = tempfile.NamedTemporaryFile(suffix=".jpg").name
+        cls.tested_class = Course
 
         user = User.objects.create_user(**{
             'email': 'q' * 50 + '@q.qq',
@@ -26,7 +25,6 @@ class CourseModelTest(TestCase):
 
         teacher = Teacher.objects.create(**{
             'user': user,
-            'photo': temporary_img,
             'description': 'q' * 50,
         })
 
@@ -44,16 +42,18 @@ class CourseModelTest(TestCase):
             'duration': 50,
             'learning_format': LearningFormat.REMOTE,
             'category': category,
-            'preview': temporary_img,
+            'preview': 'temporary_img',
             'short_description': 'q' * 50,
             'description': 'q' * 50,
         }
 
+        cls.date_format = "%H-%M %d-%m-%Y"
+
     def test_When_CreateCourseWithOutData_Should_ErrorBlankField(self):
-        course = Course()
+        course = self.tested_class()
 
         with self.assertRaises(ValidationError) as _raise:
-            course.full_clean()
+            course.save()
 
         expected_raise = {
             'teacher': ['This field cannot be blank.'],
@@ -75,10 +75,10 @@ class CourseModelTest(TestCase):
             'title': 'q' * 130
         })
 
-        course = Course(**data)
+        course = self.tested_class(**data)
 
         with self.assertRaises(ValidationError) as _raise:
-            course.full_clean()
+            course.save()
 
         expected_raise = {
             'title': [
@@ -96,10 +96,10 @@ class CourseModelTest(TestCase):
             'discount': f'{"1" * 7}.0',
         })
 
-        course = Course(**data)
+        course = self.tested_class(**data)
 
         with self.assertRaises(ValidationError) as _raise:
-            course.full_clean()
+            course.save()
 
         expected_raise = {
             'price': [
@@ -119,10 +119,10 @@ class CourseModelTest(TestCase):
             'discount': f'0.{"1" * 3}',
         })
 
-        course = Course(**data)
+        course = self.tested_class(**data)
 
         with self.assertRaises(ValidationError) as _raise:
-            course.full_clean()
+            course.save()
 
         expected_raise = {
             'price': [
@@ -141,10 +141,10 @@ class CourseModelTest(TestCase):
             'short_description': 'q' * 256
         })
 
-        course = Course(**data)
+        course = self.tested_class(**data)
 
         with self.assertRaises(ValidationError) as _raise:
-            course.full_clean()
+            course.save()
 
         expected_raise = {
             'short_description': [
@@ -154,20 +154,9 @@ class CourseModelTest(TestCase):
 
         self.assertEqual(expected_raise, real_raise)
 
-    def test_When_AllDataIsValid_Should_SaveCourseAndResturnTitle(self):
-        data = self.data
-
-        course = Course(**data)
-        course.full_clean()
-
-        expected_str = course.title
-        real_str = str(course)
-
-        self.assertEqual(expected_str, real_str)
-
     def test_When_DeleteTeacherAndCategory_Should_SetNullValue(self):
-        teacher_meta = Course._meta.get_field('teacher')
-        category_meta = Course._meta.get_field('category')
+        teacher_meta = self.tested_class._meta.get_field('teacher')
+        category_meta = self.tested_class._meta.get_field('category')
 
         expected_delete_teacher = models.SET_NULL
         real_delete_teacher = teacher_meta.remote_field.on_delete
@@ -177,3 +166,27 @@ class CourseModelTest(TestCase):
 
         self.assertEqual(expected_delete_teacher, real_delete_teacher)
         self.assertEqual(expected_delete_category, real_delete_category)
+
+    def test_When_AllDataIsValid_Should_SaveCourseAndReturnTitle(self):
+        data = self.data
+
+        course = self.tested_class(**data)
+        course.save()
+
+        expected_str = course.title
+        real_str = str(course)
+
+        self.assertEqual(expected_str, real_str)
+
+    def test_When_SaveCourse_Should_SetCreatedByOnNow(self):
+        data = self.data
+
+        course = self.tested_class(**data)
+        course.save()
+
+        date_now = timezone.now()
+
+        expected_str = date_now.strftime(self.date_format)
+        real_str = course.created_at.strftime(self.date_format)
+
+        self.assertEqual(expected_str, real_str)

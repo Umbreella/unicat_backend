@@ -6,6 +6,8 @@ from ..models.Event import Event
 
 
 class EventType(DjangoObjectType):
+    created_at = graphene.String()
+
     class Meta:
         model = Event
         interfaces = (relay.Node, )
@@ -13,6 +15,9 @@ class EventType(DjangoObjectType):
 
     def resolve_preview(self, info):
         return info.context.build_absolute_uri(self.preview.url)
+
+    def resolve_created_at(self, info):
+        return self.created_at.strftime("%d.%m.%Y")
 
 
 class EventsConnection(relay.Connection):
@@ -25,4 +30,4 @@ class EventQuery(graphene.ObjectType):
     all_events = relay.ConnectionField(EventsConnection)
 
     def resolve_all_events(root, info, **kwargs):
-        return Event.objects.all()
+        return Event.objects.all().order_by('-created_at')

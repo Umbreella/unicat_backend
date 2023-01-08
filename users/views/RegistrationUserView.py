@@ -8,7 +8,7 @@ from ..serializers.RegistrationUserSerializer import RegistrationUserSerializer
 
 class RegistrationUserView(CreateAPIView):
     serializer_class = RegistrationUserSerializer
-    permission_classes = [AllowAny]
+    permission_classes = (AllowAny, )
 
     def post(self, request, *args, **kwargs):
         data = request.data

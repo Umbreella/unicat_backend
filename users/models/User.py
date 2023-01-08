@@ -10,10 +10,12 @@ from .UserManager import UserManager
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    first_name = models.CharField(max_length=128, blank=True)
-    last_name = models.CharField(max_length=128, blank=True)
     email = models.EmailField(max_length=128, unique=True)
     password = models.CharField(max_length=128)
+    first_name = models.CharField(max_length=128, blank=True)
+    last_name = models.CharField(max_length=128, blank=True)
+    photo = models.ImageField(upload_to='teachers/%Y/%m/%d/', default=None,
+                              null=True, blank=True)
 
     is_staff = models.BooleanField(default=False)
 
@@ -26,13 +28,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         if len(self.get_fullname()) > 1:
             return self.get_fullname()
 
-        return self.get_email()
+        return self.email
 
     def get_fullname(self):
         return f'{self.first_name} {self.last_name}'
-
-    def get_email(self):
-        return self.email
 
     def save(self, *args, **kwargs):
         self.full_clean()

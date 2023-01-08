@@ -13,3 +13,5 @@ class EventAdmin(SummernoteModelAdmin):
 @admin.register(New)
 class NewsAdmin(SummernoteModelAdmin):
     summernote_fields = ('description', )
+    list_display = ('title', 'author', 'created_at')
+    list_filter = ('author', 'created_at')

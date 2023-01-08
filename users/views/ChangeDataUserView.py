@@ -8,7 +8,7 @@ from ..serializers.ChangeDataUserSerializer import ChangeDataUserSerializer
 
 class ChangeDataUserView(UpdateAPIView):
     serializer_class = ChangeDataUserSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = (IsAuthenticated, )
 
     def put(self, request, *args, **kwargs):
         data = request.data

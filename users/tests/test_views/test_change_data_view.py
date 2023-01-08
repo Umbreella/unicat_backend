@@ -14,6 +14,11 @@ class UserChangeDataViewTest(APITestCase):
         cls.user = User.objects.create_user(email='test@email.com',
                                             password='password')
 
+        client = cls.client_class()
+        client.force_authenticate(user=cls.user)
+
+        cls.logged_client = client
+
     def test_When_UnauthorizedUser_Should_ErrorWithStatus401(self):
         url = reverse('change')
         response = self.client.post(url)
@@ -25,8 +30,7 @@ class UserChangeDataViewTest(APITestCase):
 
     def test_When_GetMethod_Should_ErrorWithStatus405(self):
         url = reverse('change')
-        self.client.force_authenticate(user=self.user)
-        response = self.client.get(url)
+        response = self.logged_client.get(url)
 
         expected_status = status.HTTP_405_METHOD_NOT_ALLOWED
         real_status = response.status_code
@@ -35,8 +39,7 @@ class UserChangeDataViewTest(APITestCase):
 
     def test_When_PostMethod_Should_ErrorWithStatus405(self):
         url = reverse('change')
-        self.client.force_authenticate(user=self.user)
-        response = self.client.post(url)
+        response = self.logged_client.post(url)
 
         expected_status = status.HTTP_405_METHOD_NOT_ALLOWED
         real_status = response.status_code
@@ -45,8 +48,7 @@ class UserChangeDataViewTest(APITestCase):
 
     def test_When_DeleteMethod_Should_ErrorWithStatus405(self):
         url = reverse('change')
-        self.client.force_authenticate(user=self.user)
-        response = self.client.delete(url)
+        response = self.logged_client.delete(url)
 
         expected_status = status.HTTP_405_METHOD_NOT_ALLOWED
         real_status = response.status_code
@@ -63,8 +65,7 @@ class UserChangeDataViewTest(APITestCase):
         }
 
         url = reverse('change')
-        self.client.force_authenticate(user=self.user)
-        response = self.client.put(url, data)
+        response = self.logged_client.put(url, data)
 
         expected_status = status.HTTP_200_OK
         real_status = response.status_code
@@ -81,8 +82,7 @@ class UserChangeDataViewTest(APITestCase):
         }
 
         url = reverse('change')
-        self.client.force_authenticate(user=self.user)
-        response = self.client.put(url, data)
+        response = self.logged_client.put(url, data)
 
         expected_status = status.HTTP_400_BAD_REQUEST
         real_status = response.status_code
@@ -95,8 +95,7 @@ class UserChangeDataViewTest(APITestCase):
         }
 
         url = reverse('change')
-        self.client.force_authenticate(user=self.user)
-        response = self.client.patch(url, data)
+        response = self.logged_client.patch(url, data)
 
         expected_status = status.HTTP_200_OK
         real_status = response.status_code

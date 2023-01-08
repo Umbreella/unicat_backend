@@ -8,16 +8,16 @@ from dotenv import dotenv_values
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 config = {
-    **dotenv_values(".env"),
-    **dotenv_values(".env.local"),
-    **dotenv_values(".env.development.local"),
-    **dotenv_values(".env.production.local"),
+    **dotenv_values('.env'),
+    **dotenv_values('.env.local'),
+    **dotenv_values('.env.development.local'),
+    **dotenv_values('.env.production.local'),
     **os.environ,
 }
 
 if 'test' in sys.argv:
     config = {
-        **dotenv_values(".env.test.local"),
+        **dotenv_values('.env.test.local')
     }
 
 SECRET_KEY = config['DJANGO_APP_SECRET_KEY']
@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'aldjemy',
-    "corsheaders",
+    'corsheaders',
     'django_filters',
     'django_prometheus',
     'django_summernote',
@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt.token_blacklist',
 
     'courses',
+    'comments',
     'events',
     'users',
 ]
@@ -90,6 +91,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'unicat.wsgi.application'
+ASGI_APPLICATION = 'unicat.asgi.application'
 
 DATABASES = {
     'default': {},
@@ -152,7 +154,7 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, "static/")
+STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
@@ -214,37 +216,39 @@ CSRF_TRUSTED_ORIGINS = config.get('DJANGO_APP_CSRF_TRUSTED_ORIGINS').split(' ')
 CORS_ALLOWED_ORIGINS = config.get('DJANGO_APP_CORS_ALLOWED_ORIGINS').split(' ')
 
 CORS_ALLOW_METHODS = [
-    "DELETE",
-    "GET",
-    "PATCH",
-    "POST",
-    "PUT",
+    'DELETE',
+    'GET',
+    'PATCH',
+    'POST',
+    'PUT',
 ]
 
 CORS_ALLOW_HEADERS = [
-    "accept",
-    "accept-encoding",
-    "access-control-allow-credentials",
-    "authorization",
-    "content-type",
-    "dnt",
-    "origin",
-    "user-agent",
-    "x-csrftoken",
-    "x-requested-with",
+    'accept',
+    'accept-encoding',
+    'access-control-allow-credentials',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
 ]
 
+SUMMERNOTE_CONFIG = {
+    'attachment_absolute_uri': True,
+}
+
 GRAPHENE = {
-    'SCHEMA': 'unicat.graphql.schema',
-    'MIDDLEWARE': []
+    'SCHEMA': 'unicat.graphql.schema.schema',
+    'MIDDLEWARE': [
+        'unicat.middleware.loader_middleware.LoaderMiddleware',
+    ]
 }
 
 if DEBUG:
-    GRAPHENE.update({
-        'MIDDLEWARE': [
-            'graphene_django.debug.DjangoDebugMiddleware',
-        ]
-    })
+    GRAPHENE['MIDDLEWARE'] += ['graphene_django.debug.DjangoDebugMiddleware', ]
 
     LOGGING = {
         'version': 1,

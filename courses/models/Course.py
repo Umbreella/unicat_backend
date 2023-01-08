@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 from .Category import Category
 from .LearningFormat import LearningFormat
@@ -17,13 +18,23 @@ class Course(models.Model):
     learning_format = models.CharField(max_length=4,
                                        choices=LearningFormat.choices)
     category = models.ForeignKey(to=Category, on_delete=models.SET_NULL,
-                                 null=True)
+                                 null=True, related_name='courses')
     preview = models.ImageField(upload_to='courses/%Y/%m/%d/')
     short_description = models.CharField(max_length=255, default='')
     description = models.TextField()
-
-    class Meta:
-        abstract = False
+    created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self):
         return f'{self.title}'
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+
+        super().save(*args, **kwargs)
+
+        if not hasattr(self, 'statistic'):
+            from .CourseStat import CourseStat
+
+            CourseStat.objects.create(**{
+                'course': self
+            })

@@ -9,15 +9,17 @@ class CategoryModelTest(TestCase):
 
     @classmethod
     def setUpTestData(cls):
+        cls.tested_class = Category
+
         cls.data = {
             'title': 'q' * 50,
         }
 
     def test_When_CreateCategoryWithOutTitle_Should_ErrorBlankField(self):
-        category = Category()
+        category = self.tested_class()
 
         with self.assertRaises(ValidationError) as _raise:
-            category.full_clean()
+            category.save()
 
         expected_raise = {
             'title': ['This field cannot be blank.'],
@@ -32,10 +34,10 @@ class CategoryModelTest(TestCase):
             'title': 'q' * 130,
         })
 
-        category = Category(**data)
+        category = self.tested_class(**data)
 
         with self.assertRaises(ValidationError) as _raise:
-            category.full_clean()
+            category.save()
 
         expected_raise = {
             'title': [
@@ -49,8 +51,8 @@ class CategoryModelTest(TestCase):
             self):
         data = self.data
 
-        category = Category(**data)
-        category.full_clean()
+        category = self.tested_class(**data)
+        category.save()
 
         expected_str = category.title
         real_str = str(category)

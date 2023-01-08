@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 
 
 class Event(models.Model):
@@ -10,6 +11,7 @@ class Event(models.Model):
     start_time = models.TimeField()
     end_time = models.TimeField()
     place = models.CharField(max_length=255, default='')
+    created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         abstract = False

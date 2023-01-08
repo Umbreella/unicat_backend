@@ -21,6 +21,7 @@ from django.views.decorators.csrf import csrf_exempt
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from graphene_django.views import GraphQLView
+from graphql_sync_dataloaders import DeferredExecutionContext as GqlContext
 from rest_framework import permissions
 
 schema_view = get_schema_view(
@@ -39,11 +40,15 @@ urlpatterns = [
     path('api/admin/', admin.site.urls),
     path('api/user/', include('users.urls')),
     path('api/course/', include('courses.urls')),
+    path('api/comments/', include('comments.urls')),
 
     path('api/docs/', schema_view.with_ui('swagger', cache_timeout=0),
          name='schema-swagger-ui'),
 
-    path("graphql", csrf_exempt(GraphQLView.as_view(graphiql=False)),
+    path("graphql",
+         csrf_exempt(GraphQLView.as_view(graphiql=False,
+                                         execution_context_class=GqlContext
+                                         )),
          name='graphql'),
     path("graphql/docs", GraphQLView.as_view(graphiql=True)),
 

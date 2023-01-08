@@ -18,7 +18,7 @@ class UserLoginSerializerTest(TestCase):
         serializer = LoginUserSerializer(data=data)
         serializer.is_valid()
 
-        excepted_errors = {
+        expected_errors = {
             'email': [
                 ErrorDetail(string='This field is required.', code='required')
             ],
@@ -28,7 +28,7 @@ class UserLoginSerializerTest(TestCase):
         }
         real_errors = serializer.errors
 
-        self.assertEqual(excepted_errors, real_errors)
+        self.assertEqual(expected_errors, real_errors)
 
     def test_When_EmptyFields_Should_ErrorBlankFields(self):
         data = {
@@ -39,7 +39,7 @@ class UserLoginSerializerTest(TestCase):
         serializer = LoginUserSerializer(data=data)
         serializer.is_valid()
 
-        excepted_errors = {
+        expected_errors = {
             'email': [
                 ErrorDetail(string='This field may not be blank.',
                             code='blank')
@@ -51,7 +51,7 @@ class UserLoginSerializerTest(TestCase):
         }
         real_errors = serializer.errors
 
-        self.assertEqual(excepted_errors, real_errors)
+        self.assertEqual(expected_errors, real_errors)
 
     def test_When_BadEmail_Should_ErrorNotValidateEmail(self):
         data = {
@@ -62,7 +62,7 @@ class UserLoginSerializerTest(TestCase):
         serializer = LoginUserSerializer(data=data)
         serializer.is_valid()
 
-        excepted_errors = {
+        expected_errors = {
             'email': [
                 ErrorDetail(string='Enter a valid email address.',
                             code='invalid')
@@ -70,7 +70,7 @@ class UserLoginSerializerTest(TestCase):
         }
         real_errors = serializer.errors
 
-        self.assertEqual(excepted_errors, real_errors)
+        self.assertEqual(expected_errors, real_errors)
 
     def test_When_FiledsLengthGreaterThan128_Should_ErrorMaxLength(self):
         data = {
@@ -81,7 +81,7 @@ class UserLoginSerializerTest(TestCase):
         serializer = LoginUserSerializer(data=data)
         serializer.is_valid()
 
-        excepted_errors = {
+        expected_errors = {
             'email': [
                 ErrorDetail(string='Ensure this field has no more than 128 '
                                    'characters.',
@@ -96,7 +96,7 @@ class UserLoginSerializerTest(TestCase):
         }
         real_errors = serializer.errors
 
-        self.assertEqual(excepted_errors, real_errors)
+        self.assertEqual(expected_errors, real_errors)
 
     def test_When_RandomUserData_Should_ErrorUserNotFound(self):
         data = {
@@ -118,7 +118,7 @@ class UserLoginSerializerTest(TestCase):
         serializer = LoginUserSerializer(data=data)
         serializer.is_valid()
 
-        excepted_response = ['refresh', 'access']
+        expected_response = ['refresh', 'access']
         real_response = list(serializer.data.keys())
 
-        self.assertEqual(excepted_response, real_response)
+        self.assertEqual(expected_response, real_response)

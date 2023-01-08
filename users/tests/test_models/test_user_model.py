@@ -16,6 +16,20 @@ class TeacherModelTest(TestCase):
             'password': 'q' * 50,
         }
 
+    def test_When_CreateUserWithOutData_Should_ErrorBlankField(self):
+        user = User()
+
+        with self.assertRaises(ValidationError) as _raise:
+            user.save()
+
+        expected_raise = {
+            'email': ['This field cannot be blank.'],
+            'password': ['This field cannot be blank.'],
+        }
+        real_raise = dict(_raise.exception)
+
+        self.assertEqual(expected_raise, real_raise)
+
     def test_When_LengthDataGreaterThan128_Should_ErrorMaxLength(self):
         data = self.data
         data.update({
@@ -68,9 +82,13 @@ class TeacherModelTest(TestCase):
         user = User(**data)
         user.save()
 
+        expected_fullname = f'{user.first_name} {user.last_name}'
+        real_fullname = user.get_fullname()
+
         expected_str = user.get_fullname()
         real_str = str(user)
 
+        self.assertEqual(expected_fullname, real_fullname)
         self.assertEqual(expected_str, real_str)
 
     def test_When_NamesIsNull_Should_ReturnEmailAsFullName(self):
@@ -81,7 +99,7 @@ class TeacherModelTest(TestCase):
         user = User(**data)
         user.save()
 
-        expected_str = user.get_email()
+        expected_str = user.email
         real_str = str(user)
 
         self.assertEqual(expected_str, real_str)

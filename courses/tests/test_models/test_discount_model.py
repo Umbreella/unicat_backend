@@ -27,7 +27,6 @@ class DiscountModelTest(TestCase):
 
         teacher = Teacher.objects.create(**{
             'user': user,
-            'photo': temporary_img,
             'description': 'q' * 50,
         })
 

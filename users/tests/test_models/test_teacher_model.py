@@ -19,11 +19,11 @@ class UserModelTest(TestCase):
             'last_name': 'q' * 50,
             'email': 'q' * 50 + '@q.qq',
             'password': 'q' * 50,
+            'photo': temporary_img,
         })
 
         cls.data = {
             'user': user,
-            'photo': temporary_img,
             'description': 'q' * 50,
             'average_rating': 1.0,
             'count_graduates': 1,
@@ -41,7 +41,6 @@ class UserModelTest(TestCase):
 
         expected_raise = {
             'description': ['This field cannot be blank.'],
-            'photo': ['This field cannot be blank.'],
             'user': ['This field cannot be null.'],
         }
         real_raise = dict(_raise.exception)

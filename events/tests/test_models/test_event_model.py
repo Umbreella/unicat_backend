@@ -1,5 +1,3 @@
-import tempfile
-
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
@@ -11,10 +9,10 @@ class EventModelTest(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        temporary_img = tempfile.NamedTemporaryFile(suffix=".jpg").name
+        cls.tested_class = Event
 
         cls.data = {
-            'preview': temporary_img,
+            'preview': 'temporary_img',
             'title': 'q' * 50,
             'short_description': 'q' * 50,
             'description': 'q' * 50,
@@ -25,7 +23,7 @@ class EventModelTest(TestCase):
         }
 
     def test_When_CreateCourseWithOutData_Should_ErrorBlankField(self):
-        event = Event()
+        event = self.tested_class()
 
         with self.assertRaises(ValidationError) as _raise:
             event.save()
@@ -52,7 +50,7 @@ class EventModelTest(TestCase):
             'place': 'q' * 275,
         })
 
-        event = Event(**data)
+        event = self.tested_class(**data)
 
         with self.assertRaises(ValidationError) as _raise:
             event.save()
@@ -72,7 +70,7 @@ class EventModelTest(TestCase):
     def test_When_AllDataIsValid_Should_SaveEventAndReturnTitleAsStr(self):
         data = self.data
 
-        event = Event(**data)
+        event = self.tested_class(**data)
         event.save()
 
         expected_str = event.title

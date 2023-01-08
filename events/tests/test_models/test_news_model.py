@@ -1,8 +1,6 @@
-import tempfile
-from datetime import datetime
-
 from django.core.exceptions import ValidationError
 from django.test import TestCase
+from django.utils import timezone
 
 from users.models import User
 
@@ -14,7 +12,7 @@ class NewsModelTest(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        temporary_img = tempfile.NamedTemporaryFile(suffix=".jpg").name
+        cls.tested_class = New
 
         user = User.objects.create(**{
             'first_name': 'q' * 50,
@@ -24,16 +22,17 @@ class NewsModelTest(TestCase):
         })
 
         cls.data = {
-            'preview': temporary_img,
+            'preview': 'temporary_img',
             'title': 'q' * 50,
             'short_description': 'q' * 50,
             'description': 'q' * 50,
             'author': user,
-            'created_at': '2001-01-01'
         }
 
+        cls.date_format = "%H:%M %d-%m-%Y"
+
     def test_When_CreateNewsWithOutData_Should_ErrorBlankField(self):
-        news = New()
+        news = self.tested_class()
 
         with self.assertRaises(ValidationError) as _raise:
             news.save()
@@ -56,7 +55,7 @@ class NewsModelTest(TestCase):
             'short_description': 'q' * 275,
         })
 
-        news = New(**data)
+        news = self.tested_class(**data)
 
         with self.assertRaises(ValidationError) as _raise:
             news.save()
@@ -74,7 +73,7 @@ class NewsModelTest(TestCase):
     def test_When_AllDataIsValid_Should_SaveNewAndReturnTitleAsStr(self):
         data = self.data
 
-        news = New(**data)
+        news = self.tested_class(**data)
         news.save()
 
         expected_str = news.title
@@ -84,12 +83,11 @@ class NewsModelTest(TestCase):
 
     def test_When_DontSetCreatedAt_Should_SaveNewWithCreatedAtNow(self):
         data = self.data
-        data.pop('created_at')
 
-        news = New(**data)
+        news = self.tested_class(**data)
         news.save()
 
-        expected_created_at = news.created_at
-        real_created_at = datetime.now().date()
+        expected_created_at = timezone.now().strftime(self.date_format)
+        real_created_at = news.created_at.strftime(self.date_format)
 
         self.assertEqual(expected_created_at, real_created_at)

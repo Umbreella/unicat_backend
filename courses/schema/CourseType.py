@@ -3,19 +3,34 @@ from django.core.cache import cache
 from graphene import relay
 from graphene.types import generic
 from graphene_django import DjangoObjectType
+from graphene_django.filter import DjangoFilterConnectionField
 from graphql_relay.utils import base64
 
+from ..filtersets.CourseFilterSet import CourseFilterSet
 from ..models.Course import Course
+from ..models.CourseStat import CourseStat
 from ..models.ShortLesson import ShortLesson
+
+
+class CourseStatType(DjangoObjectType):
+    class Meta:
+        model = CourseStat
+        interfaces = (relay.Node,)
+        fields = '__all__'
 
 
 class CourseType(DjangoObjectType):
     lessons = generic.GenericScalar()
+    # teacher = graphene.List(TeacherType)
 
     class Meta:
         model = Course
         interfaces = (relay.Node,)
         fields = '__all__'
+
+    # def resolve_teacher(root, info):
+    #     key = root.teacher_id
+    #     return info.context.loaders.teacher_by_course_loader.load(key)
 
     def resolve_preview(self, info):
         return info.context.build_absolute_uri(self.preview.url)
@@ -27,7 +42,7 @@ class CourseType(DjangoObjectType):
         if cached_value:
             return cached_value
 
-        query = 'WITH RECURSIVE cte AS ('\
+        query = 'WITH RECURSIVE cte AS (' \
                 '   SELECT startTable.id, startTable.serial_number, ' \
                 '       startTable.title, startTable.parent_lesson_id ' \
                 '   FROM public.courses_shortlesson AS startTable' \
@@ -77,7 +92,9 @@ class CourseConnection(relay.Connection):
 
 class CourseQuery(graphene.ObjectType):
     course = relay.Node.Field(CourseType)
-    all_courses = relay.ConnectionField(CourseConnection)
+    all_courses = DjangoFilterConnectionField(CourseType,
+                                              filterset_class=CourseFilterSet)
+    latest_courses = relay.ConnectionField(CourseConnection)
 
-    def resolve_all_courses(root, info, **kwargs):
-        return Course.objects.all()
+    def resolve_latest_courses(root, info, **kwargs):
+        return Course.objects.order_by('-created_at')

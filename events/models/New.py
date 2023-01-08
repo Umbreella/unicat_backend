@@ -1,6 +1,5 @@
-from datetime import datetime
-
 from django.db import models
+from django.utils import timezone
 
 
 class New(models.Model):
@@ -10,7 +9,7 @@ class New(models.Model):
     description = models.TextField()
     author = models.ForeignKey('users.User', on_delete=models.SET_NULL,
                                null=True)
-    created_at = models.DateField(default=datetime.now)
+    created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         abstract = False

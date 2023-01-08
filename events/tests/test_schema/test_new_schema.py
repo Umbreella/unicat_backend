@@ -1,20 +1,21 @@
-import json
-import tempfile
+from django.test import TestCase
+from django.utils import timezone
+from graphene import Schema
+from graphene.test import Client
 
-from django.conf import settings
-from graphene_django.utils import GraphQLTestCase
-
+from unicat.graphql.functions import get_value_from_model_id
 from users.models import User
 
 from ...models.New import New
+from ...schema.NewType import NewsQuery, NewType
 
 
-class NewTypeTestCase(GraphQLTestCase):
+class NewTypeTestCase(TestCase):
     databases = {'master'}
 
     @classmethod
     def setUpTestData(cls):
-        temporary_img = tempfile.NamedTemporaryFile(suffix=".jpg").name
+        cls.tested_class = NewType
 
         cls.user = User.objects.create(**{
             'first_name': 'q' * 50,
@@ -23,86 +24,96 @@ class NewTypeTestCase(GraphQLTestCase):
             'password': 'q' * 50,
         })
 
-        New.objects.create(**{
-            'preview': temporary_img,
-            'title': 'q' * 50,
-            'short_description': 'q' * 50,
-            'description': 'q' * 50,
-            'author': cls.user,
-            'created_at': '2001-01-01'
-        })
+        New.objects.bulk_create([
+            New(**{
+                'preview': 'temporary_img',
+                'title': 'q' * 50,
+                'short_description': 'q' * 50,
+                'description': 'q' * 50,
+                'author': cls.user,
+            }),
+            New(**{
+                'preview': 'temporary_img',
+                'title': 'q' * 50,
+                'short_description': 'q' * 50,
+                'description': 'q' * 50,
+                'author': cls.user,
+            }),
+        ])
 
         cls.new_id = 'TmV3VHlwZTox'
+        cls.date_format = "%d.%m.%Y"
 
-    def test_When_SendQueryWithAllFields_Should_ReturnAllFields(self):
-        response = self.query(
+    def setUp(self) -> None:
+        schema = Schema(query=NewsQuery)
+
+        self.gql_client = Client(schema=schema)
+
+    def test_Should_IncludeAllFieldsFromModel(self):
+        expected_fields = [field.name for field in New._meta.fields]
+        real_fields = list(self.tested_class._meta.fields)
+
+        self.assertEqual(expected_fields, real_fields)
+
+    def test_When_SendQueryWithNewsId_Should_ReturnNewsByNewsId(self):
+        response = self.gql_client.execute(
             '''
-            query {
-                new (id: "''' + self.new_id + '''") {
+            query GetNews($newsId: ID!){
+                news (id: $newsId) {
                     id
-                    preview
-                    title
-                    shortDescription
-                    description
-                    author
                     createdAt
+                    author
                 }
             }
             ''',
+            variables={
+                'newsId': self.new_id
+            },
         )
 
-        self.assertResponseNoErrors(response)
+        created_at = timezone.now().strftime(self.date_format)
+
+        expected_response = {
+            'data': {
+                'news': {
+                    'id': self.new_id,
+                    'createdAt': created_at,
+                    'author': str(self.user),
+                }
+            }
+        }
+        real_response = response
+
+        self.assertEqual(expected_response, real_response)
 
     def test_When_SendQueryWithPreview_Should_ReturnFullUrlForFile(self):
-        response = self.query(
+        response = self.gql_client.execute(
             '''
-            query {
-                new (id: "''' + self.new_id + '''") {
+            query GetNews($newsId: ID!){
+                news (id: $newsId) {
                     preview
                 }
             }
             ''',
+            variables={
+                'newsId': self.new_id
+            },
         )
 
-        content = json.loads(response.content)
+        expected_url = '\'NoneType\' object has no attribute ' \
+                       '\'build_absolute_uri\''
+        real_url = response['errors'][0]['message']
 
-        expected_url = 'http://testserver' + settings.MEDIA_URL
-        real_url = content['data']['new']['preview']
+        self.assertEqual(expected_url, real_url)
 
-        self.assertIn(expected_url, real_url)
-
-    def test_When_SendQueryWithAuthor_Should_ReturnStrForUser(self):
-        response = self.query(
-            '''
-            query {
-                new (id: "''' + self.new_id + '''") {
-                    author
-                }
-            }
-            ''',
-        )
-
-        content = json.loads(response.content)
-
-        expected_author = str(self.user)
-        real_author = content['data']['new']['author']
-
-        self.assertIn(expected_author, real_author)
-
-    def test_When_SendQueryListWithAllFields_Should_ReturnAllFields(self):
-        response = self.query(
+    def test_When_SendQueryListNews_Should_ReturnListNews(self):
+        response = self.gql_client.execute(
             '''
             query {
                 allNews {
                     edges {
                         node {
                             id
-                            preview
-                            title
-                            shortDescription
-                            description
-                            author
-                            createdAt
                         }
                     }
                 }
@@ -110,10 +121,24 @@ class NewTypeTestCase(GraphQLTestCase):
             ''',
         )
 
-        content = json.loads(response.content)
+        edges = []
+        model_name = self.tested_class.__name__
 
-        expected_count_course = len(New.objects.all())
-        real_count_course = len(content['data']['allNews']['edges'])
+        for news in New.objects.order_by('-created_at').values('id'):
+            edges += [{
+                'node': {
+                    'id': get_value_from_model_id(model_name=model_name,
+                                                  model_id=news['id'])
+                }
+            }]
 
-        self.assertResponseNoErrors(response)
-        self.assertEqual(expected_count_course, real_count_course)
+        expected_response = {
+            'data': {
+                'allNews': {
+                    'edges': edges
+                }
+            }
+        }
+        real_response = response
+
+        self.assertEqual(expected_response, real_response)

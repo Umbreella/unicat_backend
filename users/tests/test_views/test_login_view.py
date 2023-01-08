@@ -30,6 +30,15 @@ class UserLoginViewTest(APITestCase):
 
         self.assertEqual(expected_status, real_status)
 
+    def test_When_PatchMethod_Should_ErrorWithStatus405(self):
+        url = reverse('signin')
+        response = self.client.patch(url)
+
+        expected_status = status.HTTP_405_METHOD_NOT_ALLOWED
+        real_status = response.status_code
+
+        self.assertEqual(expected_status, real_status)
+
     def test_When_DeleteMethod_Should_ErrorWithStatus405(self):
         url = reverse('signin')
         response = self.client.delete(url)
