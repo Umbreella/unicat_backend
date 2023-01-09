@@ -8,7 +8,7 @@ from ..serializers.LoginUserSerializer import LoginUserSerializer
 
 class LoginUserView(CreateAPIView):
     serializer_class = LoginUserSerializer
-    permission_classes = (AllowAny, )
+    permission_classes = (AllowAny,)
 
     def post(self, request, *args, **kwargs):
         data = request.data
@@ -16,4 +16,22 @@ class LoginUserView(CreateAPIView):
         serializer = self.serializer_class(data=data)
         serializer.is_valid(raise_exception=True)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        serialized_data = serializer.data
+        refresh_token = serialized_data['refresh']
+        refresh_token_path = '/api/user/token'
+
+        response = Response()
+        response.data = serialized_data
+        response.status_code = status.HTTP_200_OK
+
+        response.set_cookie(
+            key='refresh',
+            value=refresh_token,
+            path=refresh_token_path,
+            domain=None,
+            secure=True,
+            httponly=True,
+            samesite='strict'
+        )
+
+        return response
