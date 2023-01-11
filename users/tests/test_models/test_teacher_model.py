@@ -7,7 +7,7 @@ from ...models import User
 from ...models.Teacher import Teacher
 
 
-class UserModelTest(TestCase):
+class UserModelTestCase(TestCase):
     databases = {'master'}
 
     @classmethod

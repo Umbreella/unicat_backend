@@ -3,7 +3,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 
-class UserRegistrationViewTest(APITestCase):
+class UserRegistrationViewTestCase(APITestCase):
     databases = {'master'}
 
     def test_When_GetMethod_Should_ErrorWithStatus405(self):

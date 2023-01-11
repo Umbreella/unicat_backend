@@ -7,7 +7,7 @@ from ...serializers.RegistrationUserSerializer import \
     RegistrationUserSerializer
 
 
-class UserRegistrationSerializerTest(TestCase):
+class UserRegistrationSerializerTestCase(TestCase):
     databases = {'master'}
 
     @classmethod

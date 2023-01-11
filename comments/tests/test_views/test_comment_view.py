@@ -1,3 +1,4 @@
+from django.test import modify_settings
 from django.urls import path, reverse
 from rest_framework import status
 from rest_framework.test import APITestCase, URLPatternsTestCase
@@ -7,6 +8,13 @@ from users.models import User
 from ...views.CommentView import CommentView
 
 
+@modify_settings(
+    MIDDLEWARE={
+        'remove': [
+            'users.middleware.CookiesMiddleware.CookiesMiddleware',
+        ],
+    }
+)
 class CommentViewTest(APITestCase, URLPatternsTestCase):
     databases = {'master'}
 

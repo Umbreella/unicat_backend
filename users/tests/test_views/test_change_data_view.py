@@ -6,7 +6,7 @@ from ...models import User
 from ...serializers.ChangeDataUserSerializer import ChangeDataUserSerializer
 
 
-class UserChangeDataViewTest(APITestCase):
+class UserChangeDataViewTestCase(APITestCase):
     databases = {'master'}
 
     @classmethod

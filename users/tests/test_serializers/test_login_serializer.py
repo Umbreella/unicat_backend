@@ -5,7 +5,7 @@ from ...models import User
 from ...serializers.LoginUserSerializer import LoginUserSerializer
 
 
-class UserLoginSerializerTest(TestCase):
+class UserLoginSerializerTestCase(TestCase):
     databases = {'master'}
 
     @classmethod
