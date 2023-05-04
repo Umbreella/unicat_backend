@@ -2,17 +2,23 @@ from copy import copy
 from decimal import Decimal
 
 from django.core.exceptions import ValidationError
+from django.db.models import (BigAutoField, DateTimeField, ForeignKey,
+                              PositiveBigIntegerField,
+                              PositiveSmallIntegerField, SmallIntegerField,
+                              TextField)
 from django.test import TestCase
 from django.utils import timezone
 
 from courses.models.Category import Category
 from courses.models.Course import Course
 from courses.models.LearningFormat import LearningFormat
+from events.models.Event import Event
+from events.models.New import New
 from users.models import User
 from users.models.Teacher import Teacher
 
 from ...models.Comment import Comment
-from ...models.CommentedType import CommentedType
+from ...models.CommentedTypeChoices import CommentedTypeChoices
 
 
 class CategoryModelTest(TestCase):
@@ -48,13 +54,31 @@ class CategoryModelTest(TestCase):
             'category': category,
             'preview': 'temporary_img',
             'short_description': 'q' * 50,
+        })
+
+        cls.event = Event.objects.create(**{
+            'preview': 'temporary_img',
+            'title': 'q' * 50,
+            'short_description': 'q' * 50,
             'description': 'q' * 50,
+            'date': '2001-01-01',
+            'start_time': '12:00:00',
+            'end_time': '12:00:00',
+            'place': 'q' * 50,
+        })
+
+        cls.new = New.objects.create(**{
+            'preview': 'temporary_img',
+            'title': 'q' * 50,
+            'short_description': 'q' * 50,
+            'description': 'q' * 50,
+            'author': user,
         })
 
         cls.course_comment_data = {
             'author': user,
             'body': 'q' * 50,
-            'commented_type': CommentedType.COURSE.value,
+            'commented_type': CommentedTypeChoices.COURSE.value,
             'commented_id': 1,
             'rating': 5,
         }
@@ -62,25 +86,55 @@ class CategoryModelTest(TestCase):
         cls.news_comment_data = {
             'author': user,
             'body': 'q' * 50,
-            'commented_type': CommentedType.NEWS.value,
+            'commented_type': CommentedTypeChoices.NEWS.value,
             'commented_id': 1,
         }
 
         cls.event_comment_data = {
             'author': user,
             'body': 'q' * 50,
-            'commented_type': CommentedType.EVENT.value,
+            'commented_type': CommentedTypeChoices.EVENT.value,
             'commented_id': 1,
         }
 
-        cls.date_format = "%H:%M %d-%m-%Y"
+        cls.date_format = '%H:%M %d-%m-%Y'
+
+    def test_Should_IncludeRequiredFields(self):
+        expected_fields = [
+            'id', 'author', 'body', 'created_at', 'count_like',
+            'commented_type', 'commented_id', 'rating',
+        ]
+        real_fields = [
+            field.name for field in self.tested_class._meta.get_fields()
+        ]
+
+        self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_SpecificTypeForEachField(self):
+        expected_fields = {
+            'id': BigAutoField,
+            'author': ForeignKey,
+            'body': TextField,
+            'created_at': DateTimeField,
+            'count_like': PositiveSmallIntegerField,
+            'commented_type': SmallIntegerField,
+            'commented_id': PositiveBigIntegerField,
+            'rating': PositiveSmallIntegerField,
+        }
+        real_fields = {
+            field.name: field.__class__
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_fields, real_fields)
 
     def test_Should_IndexesInCommentTable(self):
         expected_indexes = [
             ['commented_type', 'commented_id'],
         ]
-        real_indexes = [index.fields for index in
-                        self.tested_class._meta.indexes]
+        real_indexes = [
+            index.fields for index in self.tested_class._meta.indexes
+        ]
 
         self.assertEqual(expected_indexes, real_indexes)
 
@@ -91,19 +145,27 @@ class CategoryModelTest(TestCase):
             comment.save()
 
         expected_raise = {
-            'author': ['This field cannot be null.'],
-            'body': ['This field cannot be blank.'],
-            'commented_id': ['This field cannot be null.'],
-            'commented_type': ['This field cannot be blank.'],
+            'author': [
+                'This field cannot be null.',
+            ],
+            'body': [
+                'This field cannot be blank.',
+            ],
+            'commented_id': [
+                'This field cannot be null.',
+            ],
+            'commented_type': [
+                'This field cannot be null.',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 
-    def test_When_CommentedTypeIsRandomText_Should_ErrorIsNotValidChoice(self):
+    def test_When_CommentedTypeIsRandomInt_Should_ErrorIsNotValidChoice(self):
         data = self.news_comment_data
         data.update({
-            'commented_type': 'q' * 8,
+            'commented_type': 99,
         })
 
         comment = self.tested_class(**data)
@@ -112,14 +174,76 @@ class CategoryModelTest(TestCase):
             comment.save()
 
         expected_raise = {
-            'commented_type': ['Value \'qqqqqqqq\' is not a valid choice.'],
+            'commented_type': [
+                'Value 99 is not a valid choice.',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
+
+        self.assertEqual(expected_raise, real_raise)
+
+    def test_When_CourseCommentedIdIsNotFound_Should_ErrorDoesNotExist(self):
+        data = self.course_comment_data
+        data.update({
+            'commented_id': 2,
+        })
+
+        comment = Comment(**data)
+
+        with self.assertRaises(ValidationError) as _raise:
+            comment.save()
+
+        expected_raise = {
+            'commented_id': [
+                'Object with this id is not found',
+            ],
+        }
+        real_raise = _raise.exception.message_dict
+
+        self.assertEqual(expected_raise, real_raise)
+
+    def test_When_EventCommentedIdIsNotFound_Should_ErrorDoesNotExist(self):
+        data = self.event_comment_data
+        data.update({
+            'commented_id': 2,
+        })
+
+        comment = Comment(**data)
+
+        with self.assertRaises(ValidationError) as _raise:
+            comment.save()
+
+        expected_raise = {
+            'commented_id': [
+                'Object with this id is not found',
+            ],
+        }
+        real_raise = _raise.exception.message_dict
+
+        self.assertEqual(expected_raise, real_raise)
+
+    def test_When_NewCommentedIdIsNotFound_Should_ErrorDoesNotExist(self):
+        data = self.news_comment_data
+        data.update({
+            'commented_id': 2,
+        })
+
+        comment = Comment(**data)
+
+        with self.assertRaises(ValidationError) as _raise:
+            comment.save()
+
+        expected_raise = {
+            'commented_id': [
+                'Object with this id is not found',
+            ],
+        }
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 
     def test_When_SetOnlyBlankData_Should_SetOtherDataWithDefaultValue(self):
-        data = self.news_comment_data
+        data = self.event_comment_data
 
         comment = self.tested_class(**data)
         comment.save()
@@ -149,15 +273,14 @@ class CategoryModelTest(TestCase):
 
         self.assertEqual(expected_str, real_str)
 
-    def test_When_CreateCourseCommentWithRating5_Should_UpdateCourseStat(self):
+    def test_When_CreateCourseCommentWithRating_Should_UpdateCourseStat(self):
         data = self.course_comment_data
 
         course_stat = self.course.statistic
-
-        course_stat.refresh_from_db()
         course_stat_before_save = copy(course_stat.__dict__)
         course_stat_before_save.update({
-            'avg_rating': Decimal('5.0'),
+            '_prefetched_objects_cache': {},
+            'avg_rating': Decimal(f'{5}.0'),
             'count_comments': 1,
             'count_five_rating': 1,
         })
@@ -180,10 +303,9 @@ class CategoryModelTest(TestCase):
         comment.save()
 
         course_stat = self.course.statistic
-
-        course_stat.refresh_from_db()
         course_stat_before_delete = copy(course_stat.__dict__)
         course_stat_before_delete.update({
+            '_prefetched_objects_cache': {},
             'avg_rating': Decimal('0.0'),
             'count_comments': 0,
             'count_five_rating': 0,
@@ -206,10 +328,9 @@ class CategoryModelTest(TestCase):
         })
 
         course_stat = self.course.statistic
-
-        course_stat.refresh_from_db()
         course_stat_before_save = copy(course_stat.__dict__)
         course_stat_before_save.update({
+            '_prefetched_objects_cache': {},
             'avg_rating': Decimal('4.0'),
             'count_comments': 1,
             'count_four_rating': 1,
@@ -236,10 +357,9 @@ class CategoryModelTest(TestCase):
         comment.save()
 
         course_stat = self.course.statistic
-
-        course_stat.refresh_from_db()
         course_stat_before_delete = copy(course_stat.__dict__)
         course_stat_before_delete.update({
+            '_prefetched_objects_cache': {},
             'avg_rating': Decimal('0.0'),
             'count_comments': 0,
             'count_four_rating': 0,
@@ -262,10 +382,9 @@ class CategoryModelTest(TestCase):
         })
 
         course_stat = self.course.statistic
-
-        course_stat.refresh_from_db()
         course_stat_before_save = copy(course_stat.__dict__)
         course_stat_before_save.update({
+            '_prefetched_objects_cache': {},
             'avg_rating': Decimal('3.0'),
             'count_comments': 1,
             'count_three_rating': 1,
@@ -292,10 +411,9 @@ class CategoryModelTest(TestCase):
         comment.save()
 
         course_stat = self.course.statistic
-
-        course_stat.refresh_from_db()
         course_stat_before_delete = copy(course_stat.__dict__)
         course_stat_before_delete.update({
+            '_prefetched_objects_cache': {},
             'avg_rating': Decimal('0.0'),
             'count_comments': 0,
             'count_three_rating': 0,
@@ -318,10 +436,9 @@ class CategoryModelTest(TestCase):
         })
 
         course_stat = self.course.statistic
-
-        course_stat.refresh_from_db()
         course_stat_before_save = copy(course_stat.__dict__)
         course_stat_before_save.update({
+            '_prefetched_objects_cache': {},
             'avg_rating': Decimal('2.0'),
             'count_comments': 1,
             'count_two_rating': 1,
@@ -348,10 +465,9 @@ class CategoryModelTest(TestCase):
         comment.save()
 
         course_stat = self.course.statistic
-
-        course_stat.refresh_from_db()
         course_stat_before_delete = copy(course_stat.__dict__)
         course_stat_before_delete.update({
+            '_prefetched_objects_cache': {},
             'avg_rating': Decimal('0.0'),
             'count_comments': 0,
             'count_two_rating': 0,
@@ -374,10 +490,9 @@ class CategoryModelTest(TestCase):
         })
 
         course_stat = self.course.statistic
-
-        course_stat.refresh_from_db()
         course_stat_before_save = copy(course_stat.__dict__)
         course_stat_before_save.update({
+            '_prefetched_objects_cache': {},
             'avg_rating': Decimal('1.0'),
             'count_comments': 1,
             'count_one_rating': 1,
@@ -404,10 +519,9 @@ class CategoryModelTest(TestCase):
         comment.save()
 
         course_stat = self.course.statistic
-
-        course_stat.refresh_from_db()
         course_stat_before_delete = copy(course_stat.__dict__)
         course_stat_before_delete.update({
+            '_prefetched_objects_cache': {},
             'avg_rating': Decimal('0.0'),
             'count_comments': 0,
             'count_one_rating': 0,
@@ -430,7 +544,6 @@ class CategoryModelTest(TestCase):
         comment.save()
 
         course_stat = self.course.statistic
-
         course_stat.refresh_from_db()
         course_stat_before_update = copy(course_stat.__dict__)
 

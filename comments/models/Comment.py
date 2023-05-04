@@ -1,9 +1,13 @@
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import models
 from django.utils import timezone
 
+from courses.models.Course import Course
 from courses.models.CourseStat import CourseStat
+from events.models.Event import Event
+from events.models.New import New
 
-from .CommentedType import CommentedType
+from .CommentedTypeChoices import CommentedTypeChoices as CTChoices
 
 
 class Comment(models.Model):
@@ -11,8 +15,7 @@ class Comment(models.Model):
     body = models.TextField()
     created_at = models.DateTimeField(default=timezone.now)
     count_like = models.PositiveSmallIntegerField(default=0)
-    commented_type = models.CharField(max_length=8,
-                                      choices=CommentedType.choices)
+    commented_type = models.SmallIntegerField(choices=CTChoices.choices)
     commented_id = models.PositiveBigIntegerField()
     rating = models.PositiveSmallIntegerField(default=None, null=True,
                                               blank=True)
@@ -28,47 +31,61 @@ class Comment(models.Model):
 
     def __iter__(self):
         for key in self.__dict__:
-            if key != '_state':
+            if not key.startswith('_'):
                 yield key, getattr(self, key)
 
     def save(self, *args, **kwargs):
         self.full_clean()
 
-        if not self.pk and self.commented_type == CommentedType.COURSE.value:
-            course_stat = CourseStat.objects.get(course_id=self.commented_id)
+        try:
+            self._check_commented_id_as_foreign_key()
+        except ObjectDoesNotExist:
+            detail = {
+                'commented_id': 'Object with this id is not found'
+            }
+            raise ValidationError(detail)
 
-            rating = self.rating
-            if rating == 5:
-                course_stat.count_five_rating += 1
-            elif rating == 4:
-                course_stat.count_four_rating += 1
-            elif rating == 3:
-                course_stat.count_three_rating += 1
-            elif rating == 2:
-                course_stat.count_two_rating += 1
-            else:
-                course_stat.count_one_rating += 1
-
-            course_stat.save()
+        if self.pk is None and self.commented_type == CTChoices.COURSE.value:
+            self._update_course_stat('add')
 
         super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
-        if self.commented_type == CommentedType.COURSE.value:
-            course_stat = CourseStat.objects.get(course_id=self.commented_id)
-
-            rating = self.rating
-            if rating == 5:
-                course_stat.count_five_rating -= 1
-            elif rating == 4:
-                course_stat.count_four_rating -= 1
-            elif rating == 3:
-                course_stat.count_three_rating -= 1
-            elif rating == 2:
-                course_stat.count_two_rating -= 1
-            else:
-                course_stat.count_one_rating -= 1
-
-            course_stat.save()
+        if self.commented_type == CTChoices.COURSE.value:
+            self._update_course_stat('sub')
 
         super().delete(*args, **kwargs)
+
+    def _check_commented_id_as_foreign_key(self):
+        if self.commented_type == CTChoices.COURSE.value:
+            Course.objects.get(pk=self.commented_id)
+
+        if self.commented_type == CTChoices.NEWS.value:
+            New.objects.get(pk=self.commented_id)
+
+        if self.commented_type == CTChoices.EVENT.value:
+            Event.objects.get(pk=self.commented_id)
+
+    def _update_course_stat(self, type_operation):
+        if type_operation == 'add':
+            change_count_rating = 1
+        elif type_operation == 'sub':
+            change_count_rating = -1
+        else:
+            raise Exception('Not valid arg "type_operation".')
+
+        course_stat = CourseStat.objects.get(course_id=self.commented_id)
+
+        rating = self.rating
+        if rating == 5:
+            course_stat.count_five_rating += change_count_rating
+        elif rating == 4:
+            course_stat.count_four_rating += change_count_rating
+        elif rating == 3:
+            course_stat.count_three_rating += change_count_rating
+        elif rating == 2:
+            course_stat.count_two_rating += change_count_rating
+        else:
+            course_stat.count_one_rating += change_count_rating
+
+        course_stat.save()

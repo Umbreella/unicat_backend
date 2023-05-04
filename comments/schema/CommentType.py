@@ -11,6 +11,16 @@ from ..filtersets.CommentNewsFilterSet import CommentNewsFilterSet
 from ..models.Comment import Comment
 
 
+class CountableConnectionBase(relay.Connection):
+    class Meta:
+        abstract = True
+
+    total_count = graphene.Int()
+
+    def resolve_total_count(self, info, **kwargs):
+        return self.iterable.count()
+
+
 class CommentType(DjangoObjectType):
     author = graphene.Field(UserType)
     created_at = graphene.String()
@@ -19,9 +29,10 @@ class CommentType(DjangoObjectType):
         model = Comment
         interfaces = (relay.Node,)
         fields = '__all__'
+        connection_class = CountableConnectionBase
 
     def resolve_created_at(self, info):
-        return self.created_at.strftime("%d.%m.%Y")
+        return self.created_at.strftime('%d.%m.%Y')
 
 
 class CommentQuery(graphene.ObjectType):

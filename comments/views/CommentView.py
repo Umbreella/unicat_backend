@@ -1,18 +1,17 @@
-from rest_framework import status
-from rest_framework.generics import CreateAPIView
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter
+from rest_framework.permissions import IsAdminUser
+from rest_framework.viewsets import ModelViewSet
+
+from ..models.Comment import Comment
+from ..serializers.CommentSerializer import CommentSerializer
 
 
-class CommentView(CreateAPIView):
-    permission_classes = (IsAuthenticated,)
-
-    def post(self, request, *args, **kwargs):
-        data = request.data
-        user = request.user
-
-        serializer = self.serializer_class(data=data, context={'user': user})
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+class CommentView(ModelViewSet):
+    queryset = Comment.objects.all()
+    permission_classes = (IsAdminUser,)
+    serializer_class = CommentSerializer
+    filter_backends = (DjangoFilterBackend, OrderingFilter,)
+    filterset_fields = ('commented_type',)
+    ordering = ('-id',)
+    ordering_fields = ('id',)

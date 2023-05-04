@@ -9,17 +9,20 @@ from users.models import User
 from users.models.Teacher import Teacher
 
 from ...models.Comment import Comment
-from ...serializers.CommentCourseSerializer import CommentCourseSerializer
-from ...views.CommentCourseView import CommentCourseView
+from ...serializers.CreateCommentCourseSerializer import \
+    CreateCommentCourseSerializer
+from ...views.CreateCommentCourseView import CreateCommentCourseView
+from ...views.CreateCommentView import CreateCommentView
 
 
-class CommentCourseViewTest(APITestCase):
+class CreateCommentCourseViewTestCase(APITestCase):
     databases = {'master'}
 
     @classmethod
     def setUpTestData(cls):
-        cls.tested_class = CommentCourseView
-        cls.serializer_class = CommentCourseSerializer
+        cls.tested_class = CreateCommentCourseView
+        cls.serializer_class = CreateCommentCourseSerializer
+        cls.url = reverse('create_comment_course')
 
         user = User.objects.create_user(email='test@email.com',
                                         password='password')
@@ -45,33 +48,40 @@ class CommentCourseViewTest(APITestCase):
             'category': category,
             'preview': 'temporary_img',
             'short_description': 'q' * 50,
-            'description': 'q' * 50,
         })
 
         client = cls.client_class()
         client.force_authenticate(user=user)
-
         cls.logged_client = client
 
     def test_Should_SuperClassIsCommentView(self):
-        super_classes = self.tested_class.__bases__
-
-        expected_super_classes = [
-            'CommentView',
-        ]
-        real_super_classes = [_super.__name__ for _super in super_classes]
+        expected_super_classes = (
+            CreateCommentView,
+        )
+        real_super_classes = self.tested_class.__bases__
 
         self.assertEqual(expected_super_classes, real_super_classes)
 
     def test_Should_SerializerClassIsCommentCourseSerializer(self):
-        expected_super_classes = 'CommentCourseSerializer'
-        real_super_classes = self.tested_class.serializer_class.__name__
+        expected_serializer = self.serializer_class
+        real_serializer = self.tested_class.serializer_class
 
-        self.assertEqual(expected_super_classes, real_super_classes)
+        self.assertEqual(expected_serializer, real_serializer)
+
+    def test_Should_DontOverridePermission(self):
+        expected_permission_classes = CreateCommentView.permission_classes
+        real_permission_classes = self.tested_class.permission_classes
+
+        self.assertEqual(expected_permission_classes, real_permission_classes)
+
+    def test_Should_DontOverridePostMethod(self):
+        expected_method = CreateCommentView.post
+        real_method = self.tested_class.post
+
+        self.assertEqual(expected_method, real_method)
 
     def test_When_GetMethod_Should_ErrorWithStatus405(self):
-        url = reverse('comments-course')
-        response = self.logged_client.get(url)
+        response = self.logged_client.get(self.url)
 
         expected_status = status.HTTP_405_METHOD_NOT_ALLOWED
         real_status = response.status_code
@@ -79,8 +89,7 @@ class CommentCourseViewTest(APITestCase):
         self.assertEqual(expected_status, real_status)
 
     def test_When_PutMethod_Should_ErrorWithStatus405(self):
-        url = reverse('comments-course')
-        response = self.logged_client.put(url)
+        response = self.logged_client.put(self.url)
 
         expected_status = status.HTTP_405_METHOD_NOT_ALLOWED
         real_status = response.status_code
@@ -88,8 +97,7 @@ class CommentCourseViewTest(APITestCase):
         self.assertEqual(expected_status, real_status)
 
     def test_When_PatchMethod_Should_ErrorWithStatus405(self):
-        url = reverse('comments-course')
-        response = self.logged_client.patch(url)
+        response = self.logged_client.patch(self.url)
 
         expected_status = status.HTTP_405_METHOD_NOT_ALLOWED
         real_status = response.status_code
@@ -97,8 +105,7 @@ class CommentCourseViewTest(APITestCase):
         self.assertEqual(expected_status, real_status)
 
     def test_When_DeleteMethod_Should_ErrorWithStatus405(self):
-        url = reverse('comments-course')
-        response = self.logged_client.delete(url)
+        response = self.logged_client.delete(self.url)
 
         expected_status = status.HTTP_405_METHOD_NOT_ALLOWED
         real_status = response.status_code
@@ -108,20 +115,14 @@ class CommentCourseViewTest(APITestCase):
     def test_When_PostMethod_Should_ReturnCommentAndStatus201(self):
         data = {
             'body': 'q' * 50,
-            'commented_id': 'OjE=',
+            'commented_id': 'Q291cnNlVHlwZTox',
             'rating': 5,
         }
-
-        url = reverse('comments-course')
-        response = self.logged_client.post(url, data=data)
+        response = self.logged_client.post(self.url, data=data)
+        serializer = self.serializer_class(Comment.objects.last())
 
         expected_status = status.HTTP_201_CREATED
         real_status = response.status_code
-
-        created_comment = Comment.objects.last()
-        serializer = self.serializer_class(data=data,
-                                           instance=created_comment)
-        serializer.is_valid()
 
         expected_data = serializer.data
         real_data = response.data
