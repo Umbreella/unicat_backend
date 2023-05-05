@@ -1,4 +1,6 @@
 from django.core.exceptions import ValidationError
+from django.db.models import (BigAutoField, CharField, DateField,
+                              DateTimeField, ImageField, TextField, TimeField)
 from django.test import TestCase
 
 from ...models.Event import Event
@@ -22,6 +24,37 @@ class EventModelTest(TestCase):
             'place': 'q' * 50,
         }
 
+    def test_Should_IncludeRequiredFields(self):
+        expected_fields = [
+            'id', 'preview', 'title', 'short_description', 'description',
+            'date', 'start_time', 'end_time', 'place', 'created_at',
+        ]
+        real_fields = [
+            field.name for field in self.tested_class._meta.get_fields()
+        ]
+
+        self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_SpecificTypeForEachField(self):
+        expected_fields = {
+            'id': BigAutoField,
+            'preview': ImageField,
+            'title': CharField,
+            'short_description': CharField,
+            'description': TextField,
+            'date': DateField,
+            'start_time': TimeField,
+            'end_time': TimeField,
+            'place': CharField,
+            'created_at': DateTimeField,
+        }
+        real_fields = {
+            field.name: field.__class__
+            for field in self.tested_class._meta.get_fields()
+        }
+        self.maxDiff = None
+        self.assertEqual(expected_fields, real_fields)
+
     def test_When_CreateCourseWithOutData_Should_ErrorBlankField(self):
         event = self.tested_class()
 
@@ -29,16 +62,32 @@ class EventModelTest(TestCase):
             event.save()
 
         expected_raise = {
-            'preview': ['This field cannot be blank.'],
-            'title': ['This field cannot be blank.'],
-            'short_description': ['This field cannot be blank.'],
-            'description': ['This field cannot be blank.'],
-            'date': ['This field cannot be null.'],
-            'start_time': ['This field cannot be null.'],
-            'end_time': ['This field cannot be null.'],
-            'place': ['This field cannot be blank.'],
+            'preview': [
+                'This field cannot be blank.',
+            ],
+            'title': [
+                'This field cannot be blank.',
+            ],
+            'short_description': [
+                'This field cannot be blank.',
+            ],
+            'description': [
+                'This field cannot be blank.',
+            ],
+            'date': [
+                'This field cannot be null.',
+            ],
+            'start_time': [
+                'This field cannot be null.',
+            ],
+            'end_time': [
+                'This field cannot be null.',
+            ],
+            'place': [
+                'This field cannot be blank.',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 
@@ -57,13 +106,16 @@ class EventModelTest(TestCase):
 
         expected_raise = {
             'title': [
-                'Ensure this value has at most 255 characters (it has 275).'],
+                'Ensure this value has at most 255 characters (it has 275).',
+            ],
             'short_description': [
-                'Ensure this value has at most 255 characters (it has 275).'],
+                'Ensure this value has at most 255 characters (it has 275).',
+            ],
             'place': [
-                'Ensure this value has at most 255 characters (it has 275).'],
+                'Ensure this value has at most 255 characters (it has 275).',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 

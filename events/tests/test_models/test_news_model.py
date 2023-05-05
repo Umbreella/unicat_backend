@@ -1,4 +1,6 @@
 from django.core.exceptions import ValidationError
+from django.db.models import (BigAutoField, CharField, DateTimeField,
+                              ForeignKey, ImageField, TextField)
 from django.test import TestCase
 from django.utils import timezone
 
@@ -29,7 +31,35 @@ class NewsModelTest(TestCase):
             'author': user,
         }
 
-        cls.date_format = "%H:%M %d-%m-%Y"
+        cls.date_format = '%H:%M %d-%m-%Y'
+
+    def test_Should_IncludeRequiredFields(self):
+        expected_fields = [
+            'id', 'preview', 'title', 'short_description', 'description',
+            'author', 'created_at',
+        ]
+        real_fields = [
+            field.name for field in self.tested_class._meta.get_fields()
+        ]
+
+        self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_SpecificTypeForEachField(self):
+        expected_fields = {
+            'id': BigAutoField,
+            'preview': ImageField,
+            'title': CharField,
+            'short_description': CharField,
+            'description': TextField,
+            'author': ForeignKey,
+            'created_at': DateTimeField,
+        }
+        real_fields = {
+            field.name: field.__class__
+            for field in self.tested_class._meta.get_fields()
+        }
+        self.maxDiff = None
+        self.assertEqual(expected_fields, real_fields)
 
     def test_When_CreateNewsWithOutData_Should_ErrorBlankField(self):
         news = self.tested_class()
@@ -38,13 +68,23 @@ class NewsModelTest(TestCase):
             news.save()
 
         expected_raise = {
-            'preview': ['This field cannot be blank.'],
-            'title': ['This field cannot be blank.'],
-            'short_description': ['This field cannot be blank.'],
-            'description': ['This field cannot be blank.'],
-            'author': ['This field cannot be blank.'],
+            'preview': [
+                'This field cannot be blank.',
+            ],
+            'title': [
+                'This field cannot be blank.',
+            ],
+            'short_description': [
+                'This field cannot be blank.',
+            ],
+            'description': [
+                'This field cannot be blank.',
+            ],
+            'author': [
+                'This field cannot be blank.',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 
@@ -62,11 +102,13 @@ class NewsModelTest(TestCase):
 
         expected_raise = {
             'short_description': [
-                'Ensure this value has at most 255 characters (it has 275).'],
+                'Ensure this value has at most 255 characters (it has 275).',
+            ],
             'title': [
-                'Ensure this value has at most 255 characters (it has 275).'],
+                'Ensure this value has at most 255 characters (it has 275).',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 

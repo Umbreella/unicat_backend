@@ -13,9 +13,6 @@ class Event(models.Model):
     place = models.CharField(max_length=255, default='')
     created_at = models.DateTimeField(default=timezone.now)
 
-    class Meta:
-        abstract = False
-
     def __str__(self):
         return f'{self.title}'
 

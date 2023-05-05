@@ -12,13 +12,13 @@ class NewType(DjangoObjectType):
     class Meta:
         model = New
         interfaces = (relay.Node,)
-        fields = "__all__"
+        fields = '__all__'
 
     def resolve_preview(self, info):
         return info.context.build_absolute_uri(self.preview.url)
 
     def resolve_created_at(self, info):
-        return self.created_at.strftime("%d.%m.%Y")
+        return self.created_at.strftime('%d.%m.%Y')
 
 
 class NewsConnection(relay.Connection):
