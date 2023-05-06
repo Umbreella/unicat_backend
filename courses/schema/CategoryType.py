@@ -12,7 +12,7 @@ class CategoryType(DjangoObjectType):
     class Meta:
         model = Category
         interfaces = (relay.Node,)
-        fields = ('id', 'title')
+        fields = ('id', 'title',)
 
 
 class CategoryQuery(graphene.ObjectType):

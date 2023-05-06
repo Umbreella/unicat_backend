@@ -1,10 +1,11 @@
 from django.core.exceptions import ValidationError
+from django.db.models import BigAutoField, CharField, ManyToOneRel
 from django.test import TestCase
 
 from ...models.Category import Category
 
 
-class CategoryModelTest(TestCase):
+class CategoryModelTestCase(TestCase):
     databases = {'master'}
 
     @classmethod
@@ -15,6 +16,29 @@ class CategoryModelTest(TestCase):
             'title': 'q' * 50,
         }
 
+    def test_Should_IncludeRequiredFields(self):
+        expected_fields = [
+            'courses', 'id', 'title',
+        ]
+        real_fields = [
+            field.name for field in self.tested_class._meta.get_fields()
+        ]
+
+        self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_SpecificTypeForEachField(self):
+        expected_fields = {
+            'courses': ManyToOneRel,
+            'id': BigAutoField,
+            'title': CharField,
+        }
+        real_fields = {
+            field.name: field.__class__
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_fields, real_fields)
+
     def test_When_CreateCategoryWithOutTitle_Should_ErrorBlankField(self):
         category = self.tested_class()
 
@@ -22,9 +46,11 @@ class CategoryModelTest(TestCase):
             category.save()
 
         expected_raise = {
-            'title': ['This field cannot be blank.'],
+            'title': [
+                'This field cannot be blank.',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 
@@ -41,9 +67,10 @@ class CategoryModelTest(TestCase):
 
         expected_raise = {
             'title': [
-                'Ensure this value has at most 128 characters (it has 130).'],
+                'Ensure this value has at most 128 characters (it has 130).',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 

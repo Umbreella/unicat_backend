@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="{% static 'css.css' %}">
+    <title>{{ title }}</title>
+</head>
+<body>
+    <div style="display: flex; height: 740px; font-size: 25px;">
+        <div class="comment_button" style="width: 250px;">
+            <div style="height: 100%; text-align: center;"></div>
+        </div>
+        <div style="flex-grow: 1; margin-left: 15px; margin-right: 15px;">
+            <div style="height: 740px;">
+                <div style="height: 200px;"></div>
+                <div style="height: 400px;">
+                    <div>
+                        Настоящий сертификат подтверждает, что
+                    </div>
+                    <div style="height: 50px; border-bottom: 1px solid black; line-height: 50px">
+                        {{ user }}
+                    </div>
+                    <div>
+                        успешно завершил/а курс
+                    </div>
+                    <div style="height: 50px; border-bottom: 1px solid black; line-height: 50px">
+                        {{ course }}
+                    </div>
+                </div>
+                <div style="height: 140px; display: flex; flex-wrap: wrap;">
+                    <div style="width: 65%; text-align: end; line-height: 75px;">
+                        преподаватель {{ teacher }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div style="width: 175px;">
+            <div style="height: 740px; display: flex; flex-direction: column; justify-content: space-between; text-align: end;">
+                <div>
+                    <div>
+                        Завершено
+                    </div>
+                    <div>
+                        {{ progress }}%
+                    </div>
+                </div>
+                <div>
+                    {{ completed_at }}
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

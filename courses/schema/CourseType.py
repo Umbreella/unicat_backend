@@ -1,88 +1,77 @@
 import graphene
-from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
+from django.utils import timezone
 from graphene import relay
-from graphene.types import generic
 from graphene_django import DjangoObjectType
 from graphene_django.filter import DjangoFilterConnectionField
-from graphql_relay.utils import base64
+from graphql.error import GraphQLError
+from graphql_jwt.decorators import login_required
 
 from ..filtersets.CourseFilterSet import CourseFilterSet
 from ..models.Course import Course
-from ..models.CourseStat import CourseStat
-from ..models.ShortLesson import ShortLesson
-
-
-class CourseStatType(DjangoObjectType):
-    class Meta:
-        model = CourseStat
-        interfaces = (relay.Node,)
-        fields = '__all__'
+from ..models.UserCourse import UserCourse
+from .DiscountType import DiscountType
 
 
 class CourseType(DjangoObjectType):
-    lessons = generic.GenericScalar()
-    # teacher = graphene.List(TeacherType)
+    learning_format = graphene.String()
+    body = graphene.String()
+    progress = graphene.Float()
+    discount = graphene.Field(DiscountType)
 
     class Meta:
         model = Course
         interfaces = (relay.Node,)
-        fields = '__all__'
+        fields = ('id', 'teacher', 'title', 'price', 'count_lectures',
+                  'count_independents', 'duration', 'category', 'preview',
+                  'short_description', 'created_at', 'statistic',)
 
     # def resolve_teacher(root, info):
     #     key = root.teacher_id
     #     return info.context.loaders.teacher_by_course_loader.load(key)
 
+    def resolve_learning_format(self, info):
+        return self.get_learning_format_display()
+
     def resolve_preview(self, info):
         return info.context.build_absolute_uri(self.preview.url)
 
-    def resolve_lessons(self, info):
-        cache_key = f'course_{self.id}_lessons_all'
-        cached_value = cache.get(cache_key, None)
+    def resolve_body(self, info):
+        try:
+            return self.course_body.body
+        except ObjectDoesNotExist:
+            return None
 
-        if cached_value:
-            return cached_value
+    def resolve_discount(self, info):
+        return self.discounts.filter(**{
+            'start_date__lte': timezone.now(),
+            'end_date__gte': timezone.now(),
+        }).first()
 
-        query = 'WITH RECURSIVE cte AS (' \
-                '   SELECT startTable.id, startTable.serial_number, ' \
-                '       startTable.title, startTable.parent_lesson_id ' \
-                '   FROM public.courses_shortlesson AS startTable' \
-                f'	WHERE startTable.course_id = {self.id}' \
-                '	' \
-                '   UNION ' \
-                '   ' \
-                '   SELECT mainTable.id, mainTable.serial_number, ' \
-                '       mainTable.title, mainTable.parent_lesson_id ' \
-                '   	FROM public.courses_shortlesson AS mainTable' \
-                '		JOIN cte ' \
-                '		    ON mainTable.parent_lesson_id = cte.id' \
-                ')' \
-                'SELECT * ' \
-                'FROM cte ' \
-                'ORDER BY parent_lesson_id NULLS FIRST, serial_number'
-
-        result_query = ShortLesson.objects.raw(query)
-        data = list(map(lambda item: dict(item), result_query))
-
-        data_tree = CourseType.create_tree(data)
-        cache.set(cache_key, data_tree)
-
-        return data_tree
-
-    @staticmethod
-    def create_tree(data_list, parent_id=None):
-        filtered_data = filter(
-            lambda item: item.get('parent_lesson_id', None) == parent_id,
-            data_list)
-        filtered_list = list(filtered_data)
-
-        for item in filtered_list:
-            item['childs'] = CourseType.create_tree(data_list, item['id'])
-            item.update({
-                'id': base64(f'ShortLessonType:{item["id"]}'),
+    @login_required
+    def resolve_progress(self, info):
+        try:
+            user_course = UserCourse.objects.get(**{
+                'course': self,
+                'user': info.context.user,
             })
-            del item['parent_lesson_id']
+        except ObjectDoesNotExist:
+            detail = 'You don`t have access on this course.'
+            raise GraphQLError(detail)
 
-        return filtered_list
+        count_lessons = sum([
+            self.count_lectures,
+            self.count_independents,
+        ])
+
+        count_completed_lessons = sum([
+            user_course.count_lectures_completed,
+            user_course.count_independents_completed,
+        ])
+
+        progress = count_completed_lessons / count_lessons
+
+        return round(progress * 100, 3)
 
 
 class CourseConnection(relay.Connection):

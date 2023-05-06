@@ -1,4 +1,8 @@
+from django.core.exceptions import ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Q
+from django.utils import timezone
 
 from ..models.Course import Course
 
@@ -6,34 +10,47 @@ from ..models.Course import Course
 class Discount(models.Model):
     course = models.ForeignKey(to=Course, on_delete=models.CASCADE,
                                related_name='discounts')
-    new_price = models.DecimalField(max_digits=7, decimal_places=2)
-    start_date = models.DateField()
-    end_date = models.DateField()
-
-    class Meta:
-        abstract = False
+    percent = models.IntegerField(validators=[MinValueValidator(1),
+                                              MaxValueValidator(100), ])
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
 
     def __str__(self):
-        return f'{self.course} - {self.new_price} (before {self.end_date})'
+        return f'{self.course} - {self.percent}%'
 
     def save(self, *args, **kwargs):
-        course_base_price = self.course.price
-        course_new_price = self.new_price
-        start_date_discount = self.start_date
-        end_date_discount = self.end_date
+        self.full_clean()
 
-        update_fields = []
-        if course_new_price <= course_base_price:
-            update_fields += ['new_price']
+        if not self.pk and self.start_date.date() <= timezone.now().date():
+            detail = {
+                'start_date': [
+                    'Discount must start no earlier than tomorrow.',
+                ],
+            }
+            raise ValidationError(detail)
 
-        if start_date_discount <= end_date_discount:
-            update_fields += ['start_date', 'end_date']
+        if self.start_date >= self.end_date:
+            detail = {
+                'start_date': [
+                    'Erroneous date values.',
+                ],
+                'end_date': [
+                    'Erroneous date values.',
+                ],
+            }
+            raise ValidationError(detail)
 
-        if self.pk:
-            kwargs.update({
-                'update_fields': update_fields
-            })
-        elif len(update_fields) != 3:
-            return None
+        if Discount.objects.filter(
+                Q(course=self.course) & (
+                        Q(end_date__range=(self.start_date, self.end_date,)) |
+                        Q(start_date__range=(self.start_date, self.end_date,))
+                )
+        ).exclude(pk=self.pk).exists():
+            detail = {
+                '__all__': [
+                    'This course has other discounts for this interval.',
+                ],
+            }
+            raise ValidationError(detail)
 
         super().save(*args, **kwargs)

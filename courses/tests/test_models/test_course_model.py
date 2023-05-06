@@ -1,5 +1,10 @@
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import (BigAutoField, CharField, DateTimeField,
+                              DecimalField, ForeignKey, ImageField,
+                              IntegerField, ManyToManyField, ManyToOneRel,
+                              OneToOneRel, PositiveIntegerField,
+                              PositiveSmallIntegerField)
 from django.test import TestCase
 from django.utils import timezone
 
@@ -11,7 +16,7 @@ from ...models.Course import Course
 from ...models.LearningFormat import LearningFormat
 
 
-class CourseModelTest(TestCase):
+class CourseModelTestCase(TestCase):
     databases = {'master'}
 
     @classmethod
@@ -44,10 +49,53 @@ class CourseModelTest(TestCase):
             'category': category,
             'preview': 'temporary_img',
             'short_description': 'q' * 50,
-            'description': 'q' * 50,
         }
 
-        cls.date_format = "%H-%M %d-%m-%Y"
+        cls.date_format = '%H-%M %d-%m-%Y'
+
+    def test_Should_IncludeRequiredFields(self):
+        expected_fields = [
+            'course_body', 'statistic', 'discounts', 'user_courses', 'lessons',
+            'payments', 'id', 'teacher', 'title', 'price', 'discount',
+            'count_lectures', 'count_independents', 'duration',
+            'learning_format', 'category', 'preview', 'short_description',
+            'created_at', 'listeners',
+        ]
+        real_fields = [
+            field.name for field in self.tested_class._meta.get_fields()
+        ]
+
+        self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_SpecificTypeForEachField(self):
+        expected_fields = {
+            'course_body': OneToOneRel,
+            'statistic': OneToOneRel,
+            'discounts': ManyToOneRel,
+            'user_courses': ManyToOneRel,
+            'payments': ManyToOneRel,
+            'lessons': ManyToOneRel,
+            'id': BigAutoField,
+            'teacher': ForeignKey,
+            'title': CharField,
+            'price': DecimalField,
+            'discount': DecimalField,
+            'count_lectures': PositiveSmallIntegerField,
+            'count_independents': PositiveSmallIntegerField,
+            'duration': PositiveIntegerField,
+            'learning_format': IntegerField,
+            'category': ForeignKey,
+            'preview': ImageField,
+            'short_description': CharField,
+            'created_at': DateTimeField,
+            'listeners': ManyToManyField,
+        }
+        real_fields = {
+            field.name: field.__class__
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_fields, real_fields)
 
     def test_When_CreateCourseWithOutData_Should_ErrorBlankField(self):
         course = self.tested_class()
@@ -56,16 +104,29 @@ class CourseModelTest(TestCase):
             course.save()
 
         expected_raise = {
-            'teacher': ['This field cannot be blank.'],
-            'title': ['This field cannot be blank.'],
-            'price': ['This field cannot be null.'],
-            'learning_format': ['This field cannot be blank.'],
-            'category': ['This field cannot be blank.'],
-            'preview': ['This field cannot be blank.'],
-            'short_description': ['This field cannot be blank.'],
-            'description': ['This field cannot be blank.'],
+            'teacher': [
+                'This field cannot be blank.',
+            ],
+            'title': [
+                'This field cannot be blank.',
+            ],
+            'price': [
+                'This field cannot be null.',
+            ],
+            'learning_format': [
+                'This field cannot be null.',
+            ],
+            'category': [
+                'This field cannot be blank.',
+            ],
+            'preview': [
+                'This field cannot be blank.',
+            ],
+            'short_description': [
+                'This field cannot be blank.',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 
@@ -82,9 +143,10 @@ class CourseModelTest(TestCase):
 
         expected_raise = {
             'title': [
-                'Ensure this value has at most 128 characters (it has 130).'],
+                'Ensure this value has at most 128 characters (it has 130).',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 
@@ -103,11 +165,13 @@ class CourseModelTest(TestCase):
 
         expected_raise = {
             'price': [
-                'Ensure that there are no more than 7 digits in total.'],
+                'Ensure that there are no more than 7 digits in total.',
+            ],
             'discount': [
-                'Ensure that there are no more than 7 digits in total.'],
+                'Ensure that there are no more than 7 digits in total.',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 
@@ -126,11 +190,13 @@ class CourseModelTest(TestCase):
 
         expected_raise = {
             'price': [
-                'Ensure that there are no more than 2 decimal places.'],
+                'Ensure that there are no more than 2 decimal places.',
+            ],
             'discount': [
-                'Ensure that there are no more than 2 decimal places.'],
+                'Ensure that there are no more than 2 decimal places.',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 
@@ -148,9 +214,10 @@ class CourseModelTest(TestCase):
 
         expected_raise = {
             'short_description': [
-                'Ensure this value has at most 255 characters (it has 256).'],
+                'Ensure this value has at most 255 characters (it has 256).',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 
@@ -178,7 +245,7 @@ class CourseModelTest(TestCase):
 
         self.assertEqual(expected_str, real_str)
 
-    def test_When_SaveCourse_Should_SetCreatedByOnNow(self):
+    def test_When_SaveCourse_Should_SetCreatedAtOnNow(self):
         data = self.data
 
         course = self.tested_class(**data)
@@ -190,3 +257,14 @@ class CourseModelTest(TestCase):
         real_str = course.created_at.strftime(self.date_format)
 
         self.assertEqual(expected_str, real_str)
+
+    def test_When_CreateCourse_Should_CreateCourseStat(self):
+        data = self.data
+
+        course = self.tested_class(**data)
+        expected_has = hasattr(course, 'statistic')
+
+        course.save()
+        real_has = hasattr(course, 'statistic')
+
+        self.assertNotEqual(expected_has, real_has)

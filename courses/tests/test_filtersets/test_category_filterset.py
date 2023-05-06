@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django_filters import OrderingFilter
 
 from ...filtersets.CategoryFilterSet import CategoryFilterSet
 from ...models.Category import Category
@@ -24,12 +25,21 @@ class CategoryFilterSetTest(TestCase):
         })
 
     def test_Should_IncludeDefiniteFilters(self):
-        dict_keys = dict(self.tested_class.get_filters()).keys()
-
         expected_filters = [
             'order_by',
         ]
-        real_filters = [key for key in dict_keys]
+        real_filters = list(self.tested_class.get_filters())
+
+        self.assertEqual(expected_filters, real_filters)
+
+    def test_Should_SpecificTypeForEachFilter(self):
+        expected_filters = {
+            'order_by': OrderingFilter,
+        }
+        real_filters = {
+            key: value.__class__
+            for key, value in self.tested_class.get_filters().items()
+        }
 
         self.assertEqual(expected_filters, real_filters)
 

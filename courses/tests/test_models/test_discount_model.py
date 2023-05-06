@@ -1,8 +1,13 @@
 import tempfile
-from datetime import datetime, timedelta
+from datetime import timedelta
 
-from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from django.core.exceptions import ValidationError
+from django.db import connections
+from django.db.models import (BigAutoField, DateTimeField, ForeignKey,
+                              IntegerField)
 from django.test import TestCase
+from django.utils import timezone
+from django.utils.connection import ConnectionProxy
 
 from users.models import User
 from users.models.Teacher import Teacher
@@ -13,12 +18,14 @@ from ...models.Discount import Discount
 from ...models.LearningFormat import LearningFormat
 
 
-class DiscountModelTest(TestCase):
+class DiscountModelTestCase(TestCase):
     databases = {'master'}
 
     @classmethod
     def setUpTestData(cls):
-        temporary_img = tempfile.NamedTemporaryFile(suffix=".jpg").name
+        cls.tested_class = Discount
+
+        temporary_img = tempfile.NamedTemporaryFile(suffix='.jpg').name
 
         user = User.objects.create_user(**{
             'email': 'q' * 50 + '@q.qq',
@@ -35,6 +42,7 @@ class DiscountModelTest(TestCase):
         })
 
         course = Course.objects.create(**{
+            'id': 1,
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
@@ -46,168 +54,259 @@ class DiscountModelTest(TestCase):
             'category': category,
             'preview': temporary_img,
             'short_description': 'q' * 50,
-            'description': 'q' * 50,
         })
 
         cls.data = {
             'course': course,
-            'new_price': 10.0,
-            'start_date': '2001-01-01',
-            'end_date': '2001-01-01',
+            'percent': 10,
+            'start_date': timezone.now() + timedelta(days=6),
+            'end_date': timezone.now() + timedelta(days=9),
         }
+
+        with ConnectionProxy(connections, 'master').cursor() as c:
+            c.execute("""
+            INSERT INTO courses_discount(
+                percent,
+                start_date,
+                end_date,
+                course_id
+            )
+            VALUES (5, '%s', '%s', 1);
+            """ % (
+                timezone.now() - timedelta(days=5),
+                timezone.now() + timedelta(days=5),
+            ))
+            c.execute("""
+            INSERT INTO courses_discount(
+                percent,
+                start_date,
+                end_date,
+                course_id
+            )
+            VALUES (10, '%s', '%s', 1);
+            """ % (
+                timezone.now() + timedelta(days=10),
+                timezone.now() + timedelta(days=20),
+            ))
+
+    def test_Should_IncludeRequiredFields(self):
+        expected_fields = [
+            'id', 'course', 'percent', 'start_date', 'end_date',
+        ]
+        real_fields = [
+            field.name for field in self.tested_class._meta.get_fields()
+        ]
+
+        self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_SpecificTypeForEachField(self):
+        expected_fields = {
+            'id': BigAutoField,
+            'course': ForeignKey,
+            'percent': IntegerField,
+            'start_date': DateTimeField,
+            'end_date': DateTimeField,
+        }
+        real_fields = {
+            field.name: field.__class__
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_fields, real_fields)
 
     def test_When_CreateDiscountWithOutData_Should_ErrorNullField(self):
-        discount = Discount()
+        discount = self.tested_class()
 
         with self.assertRaises(ValidationError) as _raise:
-            discount.full_clean()
+            discount.save()
 
         expected_raise = {
-            'course': ['This field cannot be null.'],
-            'new_price': ['This field cannot be null.'],
-            'start_date': ['This field cannot be null.'],
-            'end_date': ['This field cannot be null.'],
+            'course': [
+                'This field cannot be null.',
+            ],
+            'percent': [
+                'This field cannot be null.',
+            ],
+            'start_date': [
+                'This field cannot be null.',
+            ],
+            'end_date': [
+                'This field cannot be null.',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 
-    def test_When_NewPriceDigitsGreaterThan7_Should_ErrorMaxDigits(self):
+    def test_When_PercentLessThan1_Should_ErrorMinValue(self):
         data = self.data
         data.update({
-            'new_price': f'{"1" * 7}.0',
+            'percent': 0,
         })
 
-        discount = Discount(**data)
+        discount = self.tested_class(**data)
 
         with self.assertRaises(ValidationError) as _raise:
-            discount.full_clean()
+            discount.save()
 
         expected_raise = {
-            'new_price': [
-                'Ensure that there are no more than 7 digits in total.'],
+            'percent': [
+                'Ensure this value is greater than or equal to 1.',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 
-    def test_When_NewPriceDecPlaceGreaterThan2_Should_ErrorMaxDecPlace(self):
+    def test_When_PercentGreaterThan100_Should_ErrorMaxValue(self):
         data = self.data
         data.update({
-            'new_price': f'0.{"1" * 3}',
+            'percent': 101,
         })
 
-        discount = Discount(**data)
+        discount = self.tested_class(**data)
 
         with self.assertRaises(ValidationError) as _raise:
-            discount.full_clean()
+            discount.save()
 
         expected_raise = {
-            'new_price': [
-                'Ensure that there are no more than 2 decimal places.'],
+            'percent': [
+                'Ensure this value is less than or equal to 100.',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 
-    def test_When_AllDataIsValid_Should_SaveDiscountAndReturnCustomStr(self):
+    def test_When_DiscountStartToday_Should_ErrorDiscountCanStartOnlyTomorrow(
+            self):
+        data = self.data
+        data.update({
+            'start_date': timezone.now(),
+        })
+
+        discount = self.tested_class(**data)
+
+        with self.assertRaises(ValidationError) as _raise:
+            discount.save()
+
+        expected_raise = {
+            'start_date': [
+                'Discount must start no earlier than tomorrow.',
+            ],
+        }
+        real_raise = _raise.exception.message_dict
+
+        self.assertEqual(expected_raise, real_raise)
+
+    def test_When_StartDateAfterEndDate_Should_ErrorErroneousData(
+            self):
+        data = self.data
+        data.update({
+            'start_date': timezone.now() + timedelta(days=10),
+        })
+
+        discount = self.tested_class(**data)
+
+        with self.assertRaises(ValidationError) as _raise:
+            discount.save()
+
+        expected_raise = {
+            'start_date': [
+                'Erroneous date values.',
+            ],
+            'end_date': [
+                'Erroneous date values.',
+            ],
+        }
+        real_raise = _raise.exception.message_dict
+
+        self.assertEqual(expected_raise, real_raise)
+
+    def test_When_StartDateInOtherDiscountPeriod_Should_ErrorManyDiscounts(
+            self):
+        data = self.data
+        data.update({
+            'start_date': timezone.now() + timedelta(days=3),
+        })
+        discount = self.tested_class(**data)
+
+        with self.assertRaises(ValidationError) as _raise:
+            discount.save()
+
+        expected_raise = {
+            '__all__': [
+                'This course has other discounts for this interval.',
+            ],
+        }
+        real_raise = _raise.exception.message_dict
+
+        self.assertEqual(expected_raise, real_raise)
+
+    def test_When_EndDateInOtherDiscountPeriod_Should_ErrorManyDiscounts(
+            self):
+        data = self.data
+        data.update({
+            'end_date': timezone.now() + timedelta(days=12),
+        })
+        discount = self.tested_class(**data)
+
+        with self.assertRaises(ValidationError) as _raise:
+            discount.save()
+
+        expected_raise = {
+            '__all__': [
+                'This course has other discounts for this interval.',
+            ],
+        }
+        real_raise = _raise.exception.message_dict
+
+        self.assertEqual(expected_raise, real_raise)
+
+    def test_When_IntervalInOtherDiscountPeriod_Should_ErrorManyDiscounts(
+            self):
+        data = self.data
+        data.update({
+            'start_date': timezone.now() + timedelta(days=3),
+            'end_date': timezone.now() + timedelta(days=12),
+        })
+        discount = self.tested_class(**data)
+
+        with self.assertRaises(ValidationError) as _raise:
+            discount.save()
+
+        expected_raise = {
+            '__all__': [
+                'This course has other discounts for this interval.',
+            ],
+        }
+        real_raise = _raise.exception.message_dict
+
+        self.assertEqual(expected_raise, real_raise)
+
+    def test_When_AllDataIsValid_Should_SaveDiscount(self):
         data = self.data
 
-        discount = Discount(**data)
-        discount.full_clean()
+        discount = self.tested_class(**data)
+        discount.save()
 
-        expected_str = f'{discount.course} - {discount.new_price} ' \
-                       f'(before {discount.end_date})'
+        expected_str = f'{discount.course} - {discount.percent}%'
         real_str = str(discount)
 
         self.assertEqual(expected_str, real_str)
 
-    def test_When_DiscountPriceGreaterThanBasePrice_Should_DontCreateDiscount(
-            self):
-        data = self.data
-        data.update({
-            'new_price': 111.0
-        })
-
-        discount = Discount(**data)
-        discount.save()
-
-        with self.assertRaises(ObjectDoesNotExist) as _raise:
-            discount.refresh_from_db()
-
-        expected_raise = type(_raise.exception)
-        real_raise = type(Discount.DoesNotExist())
-
-        self.assertEqual(expected_raise, real_raise)
-
-    def test_When_StartDateGreaterThanEndDate_Should_DontCreateDiscount(self):
+    def test_When_AllDataIsValid_Should_UpdateDiscount(self):
         data = self.data
 
-        start_date_as_date = datetime.strptime(data['start_date'],
-                                               '%Y-%m-%d').date()
-
-        data.update({
-            'start_date': (start_date_as_date +
-                           timedelta(days=1)).strftime('%Y-%m-%d')
-        })
-
-        discount = Discount(**data)
+        discount = self.tested_class(**data)
         discount.save()
 
-        with self.assertRaises(ObjectDoesNotExist) as _raise:
-            discount.refresh_from_db()
+        new_start_date = timezone.now() + timedelta(days=7)
 
-        expected_raise = type(_raise.exception)
-        real_raise = type(Discount.DoesNotExist())
-
-        self.assertEqual(expected_raise, real_raise)
-
-    def test_When_NewPriceGreaterThanCoursePrice_Should_DontUpdatePrice(self):
-        data = self.data
-
-        discount = Discount(**data)
+        discount.start_date = new_start_date
         discount.save()
 
-        discount.new_price = 111.0
-        discount.save()
-
-        discount.refresh_from_db()
-
-        expected_new_price = data['new_price']
-        real_new_price = discount.new_price
-
-        self.assertEqual(expected_new_price, real_new_price)
-
-    def test_When_NewStartDateGreaterThanEndDate_Should_DontUpdateDates(self):
-        data = self.data
-
-        discount = Discount(**data)
-        discount.save()
-
-        base_date = datetime.strptime(discount.end_date, '%Y-%m-%d').date()
-        discount.start_date = (base_date +
-                               timedelta(days=1)).strftime('%Y-%m-%d')
-        discount.save()
-        discount.refresh_from_db()
-
-        expected_start_date = base_date
+        expected_start_date = new_start_date
         real_start_date = discount.start_date
 
         self.assertEqual(expected_start_date, real_start_date)
-
-    def test_When_NewEndDateLowerThanStartDate_Should_DontUpdateDates(self):
-        data = self.data
-
-        discount = Discount(**data)
-        discount.save()
-
-        base_date = datetime.strptime(discount.end_date, '%Y-%m-%d').date()
-        discount.end_date = (base_date -
-                             timedelta(days=1)).strftime('%Y-%m-%d')
-        discount.save()
-        discount.refresh_from_db()
-
-        expected_end_date = base_date
-        real_end_date = discount.end_date
-
-        self.assertEqual(expected_end_date, real_end_date)
