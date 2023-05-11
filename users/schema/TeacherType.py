@@ -11,14 +11,17 @@ class TeacherType(DjangoObjectType):
 
     class Meta:
         model = Teacher
-        interfaces = (relay.Node, )
-        fields = "__all__"
+        interfaces = (relay.Node,)
+        fields = '__all__'
 
     def resolve_full_name(self, info):
         return self.user.get_fullname()
 
     def resolve_photo(self, info):
-        return info.context.build_absolute_uri(self.user.photo.url)
+        if self.user.photo:
+            return info.context.build_absolute_uri(self.user.photo.url)
+
+        return None
 
 
 class TeacherConnection(relay.Connection):

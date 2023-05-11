@@ -13,18 +13,21 @@ class LoginUserSerializer(serializers.Serializer):
     access = serializers.SerializerMethodField()
 
     def validate(self, attrs):
-        email = attrs['email']
-        password = attrs['password']
+        user = authenticate(**attrs)
 
-        self.user = authenticate(email=email, password=password)
+        if not user:
+            raise AuthenticationFailed('User not found.')
 
-        if not self.user:
-            raise AuthenticationFailed('User not found')
+        setattr(self, 'user', user)
 
         return attrs
 
     def get_refresh(self, obj):
-        self.refresh = RefreshToken.for_user(self.user)
+        user = self.user
+
+        self.refresh = RefreshToken.for_user(user)
+        self.refresh['is_staff'] = user.is_staff
+
         return str(self.refresh)
 
     def get_access(self, obj):

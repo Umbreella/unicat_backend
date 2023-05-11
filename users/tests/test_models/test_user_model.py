@@ -9,6 +9,8 @@ class TeacherModelTestCase(TestCase):
 
     @classmethod
     def setUpTestData(cls):
+        cls.tested_class = User
+
         cls.data = {
             'first_name': 'q' * 50,
             'last_name': 'q' * 50,
@@ -17,16 +19,20 @@ class TeacherModelTestCase(TestCase):
         }
 
     def test_When_CreateUserWithOutData_Should_ErrorBlankField(self):
-        user = User()
+        user = self.tested_class()
 
         with self.assertRaises(ValidationError) as _raise:
             user.save()
 
         expected_raise = {
-            'email': ['This field cannot be blank.'],
-            'password': ['This field cannot be blank.'],
+            'email': [
+                'This field cannot be blank.',
+            ],
+            'password': [
+                'This field cannot be blank.',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 
@@ -39,22 +45,26 @@ class TeacherModelTestCase(TestCase):
             'password': 'q' * 130,
         })
 
-        user = User(**data)
+        user = self.tested_class(**data)
 
         with self.assertRaises(ValidationError) as _raise:
             user.save()
 
         expected_raise = {
             'first_name': [
-                'Ensure this value has at most 128 characters (it has 130).'],
+                'Ensure this value has at most 128 characters (it has 130).',
+            ],
             'last_name': [
-                'Ensure this value has at most 128 characters (it has 130).'],
+                'Ensure this value has at most 128 characters (it has 130).',
+            ],
             'email': [
-                'Ensure this value has at most 128 characters (it has 130).'],
+                'Ensure this value has at most 128 characters (it has 130).',
+            ],
             'password': [
-                'Ensure this value has at most 128 characters (it has 130).'],
+                'Ensure this value has at most 128 characters (it has 130).',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 
@@ -64,22 +74,24 @@ class TeacherModelTestCase(TestCase):
             'email': 'q' * 50
         })
 
-        user = User(**data)
+        user = self.tested_class(**data)
 
         with self.assertRaises(ValidationError) as _raise:
             user.save()
 
         expected_raise = {
-            'email': ['Enter a valid email address.'],
+            'email': [
+                'Enter a valid email address.',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 
     def test_When_AllDataIsValid_Should_SaveUserAndReturnFullNameAsStr(self):
         data = self.data
 
-        user = User(**data)
+        user = self.tested_class(**data)
         user.save()
 
         expected_fullname = f'{user.first_name} {user.last_name}'
@@ -96,7 +108,7 @@ class TeacherModelTestCase(TestCase):
         data.pop('first_name')
         data.pop('last_name')
 
-        user = User(**data)
+        user = self.tested_class(**data)
         user.save()
 
         expected_str = user.email
@@ -107,7 +119,7 @@ class TeacherModelTestCase(TestCase):
     def test_When_DuplicateUserEmail_Should_ErrorDuplicateUser(self):
         data = self.data
 
-        user = User(**data)
+        user = self.tested_class(**data)
         user.save()
 
         duplicate_user = User(**data)
@@ -116,8 +128,42 @@ class TeacherModelTestCase(TestCase):
             duplicate_user.save()
 
         expected_raise = {
-            'email': ['User with this Email already exists.'],
+            'email': [
+                'User with this Email already exists.',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
+
+    def test_When_UseCreateUserFromObjectManager_Should_SaveUser(self):
+        data = self.data
+
+        user = self.tested_class.objects.create_user(**data)
+        user.save()
+
+        expected_is_staff = False
+        real_is_staff = user.is_staff
+
+        expected_is_superuser = False
+        real_is_superuser = user.is_superuser
+
+        self.assertEqual(expected_is_staff, real_is_staff)
+        self.assertEqual(expected_is_superuser, real_is_superuser)
+
+    def test_When_UseCreateSuperUserFromObjectManager_Should_SaveUserAsAdmin(
+            self
+    ):
+        data = self.data
+
+        user = self.tested_class.objects.create_superuser(**data)
+        user.save()
+
+        expected_is_staff = True
+        real_is_staff = user.is_staff
+
+        expected_is_superuser = True
+        real_is_superuser = user.is_superuser
+
+        self.assertEqual(expected_is_staff, real_is_staff)
+        self.assertEqual(expected_is_superuser, real_is_superuser)

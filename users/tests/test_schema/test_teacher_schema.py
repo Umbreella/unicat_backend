@@ -1,8 +1,6 @@
 from django.test import TestCase
-from graphene import Schema
+from graphene import Context, Schema
 from graphene.test import Client
-
-from unicat.graphql.functions import get_value_from_model_id
 
 from ...models import User
 from ...models.Teacher import Teacher
@@ -16,7 +14,7 @@ class TeacherTypeTestCase(TestCase):
     def setUpTestData(cls):
         cls.tested_class = TeacherType
 
-        user = User.objects.create(**{
+        user_with_photo = User.objects.create(**{
             'first_name': 'q' * 50,
             'last_name': 'q' * 50,
             'email': 'q' * 50 + '@q.qq',
@@ -24,8 +22,16 @@ class TeacherTypeTestCase(TestCase):
             'photo': 'temporary_img',
         })
 
+        user_with_out_photo = User.objects.create(**{
+            'first_name': 'q' * 50,
+            'last_name': 'q' * 50,
+            'email': 'w' * 50 + '@q.qq',
+            'password': 'q' * 50,
+        })
+
         Teacher.objects.create(**{
-            'user': user,
+            'id': 1,
+            'user': user_with_photo,
             'description': 'q' * 50,
             'average_rating': 1.0,
             'count_graduates': 1,
@@ -35,9 +41,24 @@ class TeacherTypeTestCase(TestCase):
             'vk': 'q' * 50,
         })
 
+        Teacher.objects.create(**{
+            'id': 2,
+            'user': user_with_out_photo,
+            'description': 'q' * 50,
+            'average_rating': 1.0,
+            'count_graduates': 1,
+            'facebook': 'q' * 50,
+            'twitter': 'q' * 50,
+            'google_plus': 'q' * 50,
+            'vk': 'q' * 50,
+        })
+
+        context = Context()
+        context.build_absolute_uri = lambda x: 'build_absolute_uri'
+        cls.context = context
+
     def setUp(self) -> None:
         schema = Schema(query=TeacherQuery)
-
         self.gql_client = Client(schema=schema)
 
     def test_Should_IncludeAllFieldsFromModel(self):
@@ -50,66 +71,48 @@ class TeacherTypeTestCase(TestCase):
 
     def test_When_SendQueryListTeachers_Should_ReturnListTeachers(self):
         response = self.gql_client.execute(
-            '''
+            """
             query {
                 allTeachers {
                     edges {
                         node {
                             id
-                        }
-                    }
-                }
-            }
-            ''',
-        )
-
-        edges = []
-        model_name = self.tested_class.__name__
-
-        for teacher in Teacher.objects.values('id'):
-            edges += [{
-                'node': {
-                    'id': get_value_from_model_id(model_name=model_name,
-                                                  model_id=teacher['id'])
-                }
-            }]
-
-        expected_response = {
-            'data': {
-                'allTeachers': {
-                    'edges': edges
-                }
-            }
-        }
-
-        real_response = response
-
-        self.assertEqual(expected_response, real_response)
-
-    def test_When_SendQueryWithPhoto_Should_ReturnFullUrlForFile(self):
-        response = self.gql_client.execute(
-            '''
-            query {
-                allTeachers (first: 1) {
-                    edges {
-                        node {
                             photo
                         }
                     }
                 }
             }
-            ''',
+            """,
+            context=self.context,
         )
 
-        expected_url = '\'NoneType\' object has no attribute ' \
-                       '\'build_absolute_uri\''
-        real_url = response['errors'][0]['message']
+        expected_response = {
+            'data': {
+                'allTeachers': {
+                    'edges': [
+                        {
+                            'node': {
+                                'id': 'VGVhY2hlclR5cGU6MQ==',
+                                'photo': 'build_absolute_uri',
+                            }
+                        },
+                        {
+                            'node': {
+                                'id': 'VGVhY2hlclR5cGU6Mg==',
+                                'photo': None,
+                            }
+                        },
+                    ],
+                },
+            },
+        }
+        real_response = response
 
-        self.assertEqual(expected_url, real_url)
+        self.assertEqual(expected_response, real_response)
 
     def test_When_SendQueryWithFullName_Should_ReturnFullNameForTeacher(self):
         response = self.gql_client.execute(
-            '''
+            """
             query {
                 allTeachers (first: 1) {
                     edges {
@@ -119,7 +122,7 @@ class TeacherTypeTestCase(TestCase):
                     }
                 }
             }
-            ''',
+            """,
         )
 
         teacher = Teacher.objects.first()

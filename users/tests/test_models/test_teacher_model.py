@@ -1,5 +1,3 @@
-import tempfile
-
 from django.core.exceptions import ValidationError
 from django.test import TestCase
 
@@ -12,14 +10,14 @@ class UserModelTestCase(TestCase):
 
     @classmethod
     def setUpTestData(cls):
-        temporary_img = tempfile.NamedTemporaryFile(suffix=".jpg").name
+        cls.tested_class = Teacher
 
         user = User.objects.create(**{
             'first_name': 'q' * 50,
             'last_name': 'q' * 50,
             'email': 'q' * 50 + '@q.qq',
             'password': 'q' * 50,
-            'photo': temporary_img,
+            'photo': 'temporary_img',
         })
 
         cls.data = {
@@ -34,16 +32,20 @@ class UserModelTestCase(TestCase):
         }
 
     def test_When_CreateTeacherWithOutData_Should_ErrorBlankField(self):
-        teacher = Teacher()
+        teacher = self.tested_class()
 
         with self.assertRaises(ValidationError) as _raise:
             teacher.save()
 
         expected_raise = {
-            'description': ['This field cannot be blank.'],
-            'user': ['This field cannot be null.'],
+            'description': [
+                'This field cannot be blank.',
+            ],
+            'user': [
+                'This field cannot be null.',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 
@@ -57,24 +59,29 @@ class UserModelTestCase(TestCase):
             'vk': 'q' * 275,
         })
 
-        teacher = Teacher(**data)
+        teacher = self.tested_class(**data)
 
         with self.assertRaises(ValidationError) as _raise:
             teacher.save()
 
         expected_raise = {
             'description': [
-                'Ensure this value has at most 255 characters (it has 275).'],
+                'Ensure this value has at most 255 characters (it has 275).',
+            ],
             'facebook': [
-                'Ensure this value has at most 255 characters (it has 275).'],
+                'Ensure this value has at most 255 characters (it has 275).',
+            ],
             'twitter': [
-                'Ensure this value has at most 255 characters (it has 275).'],
+                'Ensure this value has at most 255 characters (it has 275).',
+            ],
             'google_plus': [
-                'Ensure this value has at most 255 characters (it has 275).'],
+                'Ensure this value has at most 255 characters (it has 275).',
+            ],
             'vk': [
-                'Ensure this value has at most 255 characters (it has 275).'],
+                'Ensure this value has at most 255 characters (it has 275).',
+            ],
         }
-        real_raise = dict(_raise.exception)
+        real_raise = _raise.exception.message_dict
 
         self.assertEqual(expected_raise, real_raise)
 
@@ -85,7 +92,7 @@ class UserModelTestCase(TestCase):
         data.pop('google_plus')
         data.pop('vk')
 
-        teacher = Teacher(**data)
+        teacher = self.tested_class(**data)
         teacher.save()
 
         expected_str = str(teacher.user)

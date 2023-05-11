@@ -7,8 +7,8 @@ from ..serializers.RegistrationUserSerializer import RegistrationUserSerializer
 
 
 class RegistrationUserView(CreateAPIView):
-    serializer_class = RegistrationUserSerializer
     permission_classes = (AllowAny, )
+    serializer_class = RegistrationUserSerializer
 
     def post(self, request, *args, **kwargs):
         data = request.data
@@ -17,4 +17,5 @@ class RegistrationUserView(CreateAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response({'data': 'Confirm your email.'},
+                        status=status.HTTP_201_CREATED)

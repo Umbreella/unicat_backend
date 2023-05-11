@@ -3,6 +3,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from ..models import User
+from ..tasks.SendConfirmEmailTask import send_confirm_email_task
 from .LoginUserSerializer import LoginUserSerializer
 
 
@@ -11,14 +12,26 @@ class RegistrationUserSerializer(LoginUserSerializer):
                                        max_length=128)
     last_name = serializers.CharField(required=True, write_only=True,
                                       max_length=128)
+    refresh = None
+    access = None
 
     def validate(self, attrs):
         return attrs
 
     def create(self, validated_data):
         try:
-            self.user = User.objects.create_user(**validated_data)
-        except djValidationError as _raise:
-            raise ValidationError(_raise)
+            user = User.objects.create_user(**validated_data)
+        except djValidationError:
+            detail = {
+                'email': [
+                    'This email is already registered.',
+                ],
+            }
+            raise ValidationError(detail)
 
-        return self.user
+        send_confirm_email_task.apply_async(kwargs={
+            'user_id': user.id,
+            'user_email': user.email,
+        })
+
+        return user

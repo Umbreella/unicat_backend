@@ -7,8 +7,8 @@ from ..serializers.LoginUserSerializer import LoginUserSerializer
 
 
 class LoginUserView(CreateAPIView):
-    serializer_class = LoginUserSerializer
     permission_classes = (AllowAny,)
+    serializer_class = LoginUserSerializer
 
     def post(self, request, *args, **kwargs):
         data = request.data
@@ -23,15 +23,15 @@ class LoginUserView(CreateAPIView):
         response = Response()
         response.data = serialized_data
         response.status_code = status.HTTP_200_OK
-
-        response.set_cookie(
-            key='refresh',
-            value=refresh_token,
-            path=refresh_token_path,
-            domain=None,
-            secure=True,
-            httponly=True,
-            samesite='strict'
-        )
+        response.set_cookie(**{
+            'key': 'refresh',
+            'value': refresh_token,
+            # 'max_age': '',
+            'path': refresh_token_path,
+            'domain': None,
+            'secure': True,
+            'httponly': True,
+            'samesite': 'strict',
+        })
 
         return response

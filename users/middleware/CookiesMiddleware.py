@@ -12,7 +12,7 @@ class CookiesMiddleware:
         token_refresh_path = reverse('token_refresh')
         token_destroy_path = reverse('token_destroy')
 
-        if request.method == "POST" and request_path in [token_refresh_path,
+        if request.method == 'POST' and request_path in [token_refresh_path,
                                                          token_destroy_path]:
             cookies = request.COOKIES
             refresh_token_cookies = cookies.get('refresh', None)

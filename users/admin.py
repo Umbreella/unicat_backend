@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import User
+from .models.ResetPassword import ResetPassword
 from .models.Teacher import Teacher
 
 
@@ -11,4 +12,9 @@ class UserAdmin(admin.ModelAdmin):
 
 @admin.register(Teacher)
 class TeacherAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(ResetPassword)
+class ResetPasswordUrlAdmin(admin.ModelAdmin):
     pass

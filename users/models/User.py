@@ -2,7 +2,6 @@ import re
 
 from django.conf import settings
 from django.contrib.auth.base_user import AbstractBaseUser
-from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
 
@@ -16,8 +15,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     last_name = models.CharField(max_length=128, blank=True)
     photo = models.ImageField(upload_to='teachers/%Y/%m/%d/', default=None,
                               null=True, blank=True)
-
     is_staff = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ()
@@ -37,11 +36,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         self.full_clean()
 
         current_password = self.password
-        hashed_password_pattern = self._get_hashed_pattern()
+        hashed_password_pattern = self.__get_hashed_pattern()
 
         if not re.fullmatch(hashed_password_pattern, current_password):
-            hashed_password = make_password(current_password)
-            self.password = hashed_password
+            self.set_password(current_password)
 
         self.first_name = str(self.first_name).strip()
         self.last_name = str(self.last_name).strip()
@@ -49,7 +47,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
         super().save(*args, **kwargs)
 
-    def _get_hashed_pattern(self):
+    def __get_hashed_pattern(self):
         current_hash_algorithm = settings.PASSWORD_HASHERS[0]
 
         if 'PBKDF2PasswordHasher' in current_hash_algorithm:

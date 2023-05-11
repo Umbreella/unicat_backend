@@ -51,14 +51,16 @@ class CookiesMiddlewareTestCase(APITestCase, URLPatternsTestCase):
         not_valid_cookies = SimpleCookie({
             'name': 'w' * 10,
         })
-        cls.not_valid_cookies = {key: value.value for key, value in
-                                 not_valid_cookies.items()}
+        cls.not_valid_cookies = {
+            key: value.value for key, value in not_valid_cookies.items()
+        }
 
         valid_cookies = SimpleCookie({
             'refresh': 'w' * 10,
         })
-        cls.valid_cookies = {key: value.value for key, value in
-                             valid_cookies.items()}
+        cls.valid_cookies = {
+            key: value.value for key, value in valid_cookies.items()
+        }
 
         client_with_not_valid_cookies = cls.client_class()
         client_with_not_valid_cookies.cookies = not_valid_cookies
