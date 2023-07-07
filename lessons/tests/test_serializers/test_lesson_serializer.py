@@ -11,13 +11,11 @@ from users.models.Teacher import Teacher
 from ...models.Lesson import Lesson
 from ...models.LessonBody import LessonBody
 from ...models.LessonTypeChoices import LessonTypeChoices
-from ...models.Question import Question
-from ...models.QuestionTypeChoices import QuestionTypeChoices
 from ...serializers.LessonSerializer import LessonSerializer
 
 
 class LessonSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -42,7 +40,6 @@ class LessonSerializerTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -57,7 +54,6 @@ class LessonSerializerTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -98,18 +94,6 @@ class LessonSerializerTestCase(TestCase):
             'lesson_type': LessonTypeChoices.TEST.value,
             'description': 'q' * 50,
             'parent': lesson_theme.id,
-            'questions': [
-                {
-                    'body': 'w' * 50,
-                    'question_type': QuestionTypeChoices.FREE.value,
-                    'answers': [
-                        {
-                            'value': 'q' * 50,
-                            'is_true': True,
-                        },
-                    ],
-                },
-            ],
         }
 
     def test_Should_InheritModelSerializer(self):
@@ -122,8 +106,8 @@ class LessonSerializerTestCase(TestCase):
 
     def test_Should_IncludeDefiniteFieldsFromCommentModel(self):
         expected_fields = [
-            'id', 'course', 'title', 'lesson_type', 'description', 'body',
-            'parent', 'questions',
+            'id', 'course', 'serial_number', 'title', 'lesson_type',
+            'description', 'body', 'parent',
         ]
         real_fields = list(self.tested_class().get_fields())
 
@@ -140,13 +124,13 @@ class LessonSerializerTestCase(TestCase):
 
         self.assertEqual(expected_method, real_method)
 
-    def test_Should_OverrideSuperCreateMethod(self):
+    def test_Should_OverrideSuperMethodCreate(self):
         expected_method = ModelSerializer.create
         real_method = self.tested_class.create
 
         self.assertNotEqual(expected_method, real_method)
 
-    def test_Should_OverrideSuperUpdateMethod(self):
+    def test_Should_OverrideSuperMethodUpdate(self):
         expected_method = ModelSerializer.update
         real_method = self.tested_class.update
 
@@ -213,7 +197,7 @@ class LessonSerializerTestCase(TestCase):
             'description': 'q' * 50,
             'body': None,
             'parent': None,
-            'questions': [],
+            'serial_number': 1,
         }
         real_data = serializer.data
 
@@ -234,7 +218,7 @@ class LessonSerializerTestCase(TestCase):
             'description': 'q' * 50,
             'body': 'q' * 50,
             'parent': 1,
-            'questions': [],
+            'serial_number': 1,
         }
         real_data = serializer.data
 
@@ -243,38 +227,6 @@ class LessonSerializerTestCase(TestCase):
 
         self.assertEqual(expected_data, real_data)
         self.assertEqual(expected_count_lesson_body, real_count_lesson_body)
-
-    def test_When_LessonIsTest_Should_CreateLessonTestAndQuestions(self):
-        data = self.data_lesson_test
-
-        serializer = self.tested_class(data=data)
-        serializer.is_valid()
-        serializer.save()
-
-        expected_data = {
-            'id': 2,
-            'course': 1,
-            'title': 'q' * 50,
-            'lesson_type': 3,
-            'description': 'q' * 50,
-            'body': None,
-            'parent': 1,
-            'questions': [
-                {
-                    'id': 1,
-                    'body': 'w' * 50,
-                    'question_type': 3,
-                    'lesson': 2,
-                },
-            ],
-        }
-        real_data = serializer.data
-
-        expected_count_questions = 1
-        real_count_questions = len(Question.objects.all())
-
-        self.assertEqual(expected_data, real_data)
-        self.assertEqual(expected_count_questions, real_count_questions)
 
     def test_When_UpdateLessonTheme_Should_UpdateLessonTheme(self):
         save_data = self.data_lesson_theme
@@ -296,13 +248,13 @@ class LessonSerializerTestCase(TestCase):
 
         expected_data = {
             'id': 2,
-            'course': 1,
+            'course': 2,
             'title': 'w' * 50,
             'lesson_type': 1,
             'description': 'q' * 50,
             'body': None,
             'parent': None,
-            'questions': [],
+            'serial_number': 1,
         }
         real_data = serializer.data
 
@@ -335,68 +287,7 @@ class LessonSerializerTestCase(TestCase):
             'description': 'w' * 50,
             'body': 'w' * 50,
             'parent': 1,
-            'questions': [],
-        }
-        real_data = serializer.data
-
-        self.assertEqual(expected_data, real_data)
-
-    def test_When_UpdateLessonTest_Should_DontChangeQuestions(self):
-        save_data = self.data_lesson_test
-
-        save_serializer = self.tested_class(data=save_data)
-        save_serializer.is_valid()
-        save_serializer.save()
-
-        data = save_data
-        data.update({
-            'course': 2,
-            'title': 'w' * 50,
-            'questions': [
-                {
-                    'body': 'w' * 50,
-                    'question_type': QuestionTypeChoices.FREE.value,
-                    'answers': [
-                        {
-                            'value': 'q' * 50,
-                            'is_true': True,
-                        },
-                    ],
-                },
-                {
-                    'body': 'w' * 50,
-                    'question_type': QuestionTypeChoices.FREE.value,
-                    'answers': [
-                        {
-                            'value': 'q' * 50,
-                            'is_true': True,
-                        },
-                    ],
-                },
-            ],
-        })
-
-        instance = save_serializer.instance
-        serializer = self.tested_class(data=data, instance=instance)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        expected_data = {
-            'id': 2,
-            'course': 1,
-            'title': 'w' * 50,
-            'lesson_type': 3,
-            'description': 'q' * 50,
-            'body': None,
-            'parent': 1,
-            'questions': [
-                {
-                    'id': 1,
-                    'body': 'w' * 50,
-                    'question_type': 3,
-                    'lesson': 2,
-                },
-            ],
+            'serial_number': 1,
         }
         real_data = serializer.data
 

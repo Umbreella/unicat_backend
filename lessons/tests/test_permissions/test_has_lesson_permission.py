@@ -1,5 +1,3 @@
-from types import SimpleNamespace
-
 from django.test import TestCase
 from rest_framework.permissions import BasePermission
 
@@ -16,7 +14,7 @@ from ...permissions.HasLessonPermission import HasLessonPermission
 
 
 class HasLessonPermissionTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -40,7 +38,6 @@ class HasLessonPermissionTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -54,7 +51,6 @@ class HasLessonPermissionTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -85,15 +81,13 @@ class HasLessonPermissionTestCase(TestCase):
             'course': first_course,
         })
 
-        request = SimpleNamespace()
-        request.user = user
-        cls.request = request
+        cls.request = type('request', (object,), {'user': user, })
 
-        view = SimpleNamespace()
-        view.kwargs = {
-            'lesson_id': 'TGVzc29uVHlwZTox',
-        }
-        cls.view = view
+        cls.view = type('view', (object,), {
+            'kwargs': {
+                'lesson_id': 'TGVzc29uVHlwZTox',
+            },
+        })
 
     def test_Should_InheritBasePermission(self):
         expected_super_classes = (

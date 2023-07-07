@@ -10,13 +10,14 @@ def update_count_question_task(lesson_id: int):
     from ..models.Question import Question
 
     with transaction.atomic(using='master'):
-        lesson = Lesson.objects.using('master').get(pk=lesson_id)
+        count_question = Question.objects.using('master').filter(**{
+            'lesson_id': lesson_id,
+        }).count()
 
-        count_question = Question.objects.filter(**{
-            'lesson': lesson,
-        }).using('master').count()
-
-        lesson.count_questions = count_question
-        lesson.save()
+        Lesson.objects.filter(**{
+            'pk': lesson_id,
+        }).update(**{
+            'count_questions': count_question,
+        })
 
         return 'Count question is updated/'

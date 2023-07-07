@@ -11,13 +11,13 @@ from .views.UserAttemptRefreshView import UserAttemptRefreshView
 from .views.UserAttemptView import UserAttemptView
 
 urlpatterns = [
-    re_path(r'^(?P<lesson_id>[\w=]*)/attempt$', UserAttemptView.as_view(),
-            name='user_attempt'),
-    re_path(r'^(?P<lesson_id>[\w=]*)/attempt/refresh$',
+    re_path(r'(?P<lesson_id>[\w=]*)/attempt/refresh/',
             UserAttemptRefreshView.as_view(), name='user_attempt_refresh'),
-    re_path(r'^(?P<lesson_id>[\w=]*)/complete$', LessonCompleteView.as_view(),
+    re_path(r'(?P<lesson_id>[\w=]*)/attempt/', UserAttemptView.as_view(),
+            name='user_attempt'),
+    re_path(r'(?P<lesson_id>[\w=]*)/complete/', LessonCompleteView.as_view(),
             name='lesson_complete'),
-    re_path(r'^attempts/(?P<attempt_id>[\w=]*)/answer$',
+    re_path(r'attempts/(?P<attempt_id>[\w=]*)/answer/',
             UserAnswerView.as_view(), name='user_answer'),
     path(**{
         'route': '',

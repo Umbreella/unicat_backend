@@ -19,24 +19,30 @@ def update_count_lesson_task(course_id: int, lesson_type: int):
         return 'Count lesson is not updated.'
 
     with transaction.atomic(using='master'):
-        course = Course.objects.using('master').get(pk=course_id)
+        update_data = {}
 
         if lesson_type == LessonTypeChoices.THEORY.value:
             count_lectures = Lesson.objects.filter(**{
-                'course': course,
+                'course_id': course_id,
                 'lesson_type': lesson_type,
-            }).using('master').count()
+            }).count()
 
-            course.count_lectures = count_lectures
-            course.save()
+            update_data.update({
+                'count_lectures': count_lectures,
+            })
 
         if lesson_type == LessonTypeChoices.TEST.value:
             count_independents = Lesson.objects.filter(**{
-                'course': course,
+                'course_id': course_id,
                 'lesson_type': lesson_type,
-            }).using('master').count()
+            }).count()
 
-            course.count_independents = count_independents
-            course.save()
+            update_data.update({
+                'count_independents': count_independents,
+            })
+
+        Course.objects.filter(**{
+            'pk': course_id,
+        }).update(**update_data)
 
         return 'Count lesson is updated.'

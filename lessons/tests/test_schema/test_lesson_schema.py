@@ -1,7 +1,10 @@
+import json
+from datetime import timedelta
+
 from django.utils import timezone
-from graphene import Boolean, Context, Float, NonNull, Schema, String, relay
-from graphene.test import Client
-from graphql_jwt.testcases import JSONWebTokenTestCase
+from graphene import Boolean, Float, NonNull, String, relay
+from graphene_django.utils import GraphQLTestCase
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from courses.models.Category import Category
 from courses.models.Course import Course
@@ -14,29 +17,29 @@ from ...models.Lesson import Lesson
 from ...models.LessonBody import LessonBody
 from ...models.LessonTypeChoices import LessonTypeChoices
 from ...models.UserLesson import UserLesson
-from ...schema.LessonType import LessonQuery, LessonType
+from ...schema.LessonType import LessonType
 
 
-class LessonTypeTestCase(JSONWebTokenTestCase):
-    databases = {'master'}
+class LessonTypeTestCase(GraphQLTestCase):
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
         cls.tested_class = LessonType
         cls.model = Lesson
 
-        user_with_access = User.objects.create_user(**{
+        cls.user_access = User.objects.create_superuser(**{
             'email': 'q' * 50 + '@q.qq',
             'password': 'q' * 50,
         })
 
-        user_without_access = User.objects.create_user(**{
+        cls.user_not_access = User.objects.create_superuser(**{
             'email': 'w' * 50 + '@q.qq',
             'password': 'q' * 50,
         })
 
         teacher = Teacher.objects.create(**{
-            'user': user_with_access,
+            'user': cls.user_access,
             'description': 'q' * 50,
         })
 
@@ -48,7 +51,6 @@ class LessonTypeTestCase(JSONWebTokenTestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -62,7 +64,6 @@ class LessonTypeTestCase(JSONWebTokenTestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -97,8 +98,8 @@ class LessonTypeTestCase(JSONWebTokenTestCase):
         })
 
         UserLesson.objects.create(**{
+            'user': cls.user_access,
             'lesson': lesson_with_body_complete,
-            'user': user_with_access,
             'completed_at': timezone.now(),
         })
 
@@ -107,29 +108,13 @@ class LessonTypeTestCase(JSONWebTokenTestCase):
             'body': 'q' * 50,
         })
 
-        UserCourse.objects.create(**{
+        cls.user_course = UserCourse.objects.create(**{
+            'user': cls.user_access,
             'course': course_with_access,
-            'user': user_with_access,
+            'last_view': timezone.now() - timedelta(days=2),
         })
 
-        #   'TGVzc29uVHlwZTox' - 'LessonType:1'
-        #   'TGVzc29uVHlwZToy' - 'LessonType:2'
-        #   'TGVzc29uVHlwZToz' - 'LessonType:3'
-        cls.lesson_id_with_access = 'TGVzc29uVHlwZTox'
-        cls.lesson_id_with_access_and_with_out_body = 'TGVzc29uVHlwZToy'
-        cls.lesson_id_with_out_access = 'TGVzc29uVHlwZToz'
-
-        context_with_access = Context()
-        context_with_access.user = user_with_access
-        cls.context_with_access = context_with_access
-
-        context_without_access = Context()
-        context_without_access.user = user_without_access
-        cls.context_without_access = context_without_access
-
-    def setUp(self):
-        schema = Schema(query=LessonQuery)
-        self.gql_client = Client(schema=schema)
+        cls.date_format = '%H-%M %d-%m-%Y'
 
     def test_Should_IncludeDefiniteDjangoModel(self):
         expected_model = self.model
@@ -148,7 +133,7 @@ class LessonTypeTestCase(JSONWebTokenTestCase):
     def test_Should_IncludeDefiniteFieldsFromModel(self):
         expected_fields = [
             'id', 'serial_number', 'title', 'description', 'lesson_type',
-            'time_limit', 'count_questions', 'body', 'is_completed',
+            'time_limit', 'count_questions', 'is_completed', 'body',
         ]
         real_fields = list(self.tested_class._meta.fields)
 
@@ -178,17 +163,14 @@ class LessonTypeTestCase(JSONWebTokenTestCase):
 
     def test_When_SendQueryWithOutAuthenticate_Should_ErrorHasNotPermission(
             self):
-        response = self.client.execute(
+        response = self.query(
             """
-            query GetLesson ($id: ID!) {
-                lesson (id: $id) {
+            query {
+                lesson (id: "TGVzc29uVHlwZToz") {
                     id
                 }
             }
             """,
-            variables={
-                'id': self.lesson_id_with_out_access,
-            },
         )
 
         expected_response = {
@@ -205,24 +187,24 @@ class LessonTypeTestCase(JSONWebTokenTestCase):
                 },
             ],
         }
-        real_response = response
+        real_response = json.loads(response.content)
 
         self.assertEqual(expected_response, real_response)
 
     def test_When_SendQueryWithOutAccess_Should_ErrorNotHaveAccess(self):
-        response = self.gql_client.execute(
+        refresh_token = RefreshToken.for_user(self.user_not_access)
+        response = self.query(
             """
-            query GetLesson ($id: ID!) {
-                lesson (id: $id) {
+            query {
+                lesson (id: "TGVzc29uVHlwZToz") {
                     id
                     body
                 }
             }
             """,
-            variables={
-                'id': self.lesson_id_with_out_access,
+            headers={
+                'HTTP_AUTHORIZATION': f'Bearer {refresh_token.access_token}',
             },
-            context=self.context_without_access,
         )
 
         expected_response = {
@@ -237,69 +219,76 @@ class LessonTypeTestCase(JSONWebTokenTestCase):
                 },
             ],
         }
-        real_response = response
+        real_response = json.loads(response.content)
 
         self.assertEqual(expected_response, real_response)
 
     def test_When_SendQueryWithAccess_Should_ReturnLessonAndLessonBody(self):
-        response = self.gql_client.execute(
+        access_token = RefreshToken.for_user(self.user_access).access_token
+        response = self.query(
             """
-            query GetLesson ($id: ID!) {
-                lesson (id: $id) {
+            query {
+                lesson (id: "TGVzc29uVHlwZTox") {
                     id
                     body
                     lessonType
                     isCompleted
+                    serialNumber
                 }
             }
             """,
-            variables={
-                'id': self.lesson_id_with_access,
+            headers={
+                'HTTP_AUTHORIZATION': f'Bearer {access_token}',
             },
-            context=self.context_with_access,
         )
+        self.user_course.refresh_from_db()
 
         expected_response = {
             'data': {
                 'lesson': {
-                    'id': self.lesson_id_with_access,
+                    'id': 'TGVzc29uVHlwZTox',
                     'body': self.lesson_body.body,
                     'lessonType': 'Тема',
                     'isCompleted': True,
+                    'serialNumber': '1.',
                 },
             },
         }
-        real_response = response
+        real_response = json.loads(response.content)
+
+        expected_last_view = timezone.now().strftime(self.date_format)
+        real_last_view = self.user_course.last_view.strftime(self.date_format)
 
         self.assertEqual(expected_response, real_response)
+        self.assertEqual(expected_last_view, real_last_view)
 
     def test_When_SendQueryLessonWithOutLessonBody_Should_ReturnLessonAndNull(
             self):
-        response = self.gql_client.execute(
+        access_token = RefreshToken.for_user(self.user_access).access_token
+        response = self.query(
             """
-            query GetLesson ($id: ID!) {
-                lesson (id: $id) {
+            query {
+                lesson (id: "TGVzc29uVHlwZToy") {
                     id
                     body
                     isCompleted
                 }
             }
             """,
-            variables={
-                'id': self.lesson_id_with_access_and_with_out_body,
+            headers={
+                'HTTP_AUTHORIZATION': f'Bearer {access_token}',
             },
-            context=self.context_with_access,
         )
 
         expected_response = {
             'data': {
                 'lesson': {
-                    'id': self.lesson_id_with_access_and_with_out_body,
+                    'id': 'TGVzc29uVHlwZToy',
                     'body': None,
                     'isCompleted': False,
                 },
             },
         }
-        real_response = response
+        real_response = json.loads(response.content)
 
         self.assertEqual(expected_response, real_response)

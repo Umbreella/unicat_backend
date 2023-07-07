@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError
+from django.db.models import BigAutoField, DateField, ForeignKey, ManyToOneRel
 from django.test import TestCase
 from django.utils import timezone
 
@@ -15,7 +16,7 @@ from ...models.UserLesson import UserLesson
 
 
 class UserLessonTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -39,7 +40,6 @@ class UserLessonTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -77,6 +77,48 @@ class UserLessonTestCase(TestCase):
         }
 
         cls.format = '%H-%M %d-%m-%Y'
+
+    def test_Should_IncludeRequiredFields(self):
+        expected_fields = [
+            'userattempt', 'id', 'lesson', 'user', 'completed_at',
+        ]
+        real_fields = [
+            field.name for field in self.tested_class._meta.get_fields()
+        ]
+
+        self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_SpecificTypeForEachField(self):
+        expected_fields = {
+            'completed_at': DateField,
+            'id': BigAutoField,
+            'lesson': ForeignKey,
+            'user': ForeignKey,
+            'userattempt': ManyToOneRel,
+        }
+        real_fields = {
+            field.name: field.__class__
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_HelpTextForEachField(self):
+        expected_help_text = {
+            'completed_at': 'Has the lesson been completed by the user.',
+            'id': '',
+            'lesson': 'A lesson that the user has access to.',
+            'user': 'The user who got access to the lesson.',
+            'userattempt': '',
+        }
+        real_help_text = {
+            field.name: (
+                field.help_text if hasattr(field, 'help_text') else ''
+            )
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_help_text, real_help_text)
 
     def test_When_CreateUserLessonWithOutData_Should_ErrorBlankFields(self):
         user_lesson = self.tested_class()

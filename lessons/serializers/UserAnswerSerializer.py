@@ -1,10 +1,9 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import ValidationError as DjValidationError
 from django.utils import timezone
+from graphql_relay import from_global_id, to_global_id
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied, ValidationError
-
-from unicat.graphql.functions import get_id_from_value, get_value_from_model_id
 
 from ..models.Question import Question
 from ..models.QuestionTypeChoices import QuestionTypeChoices
@@ -22,13 +21,24 @@ class UserAnswerSerializer(serializers.Serializer):
                                    write_only=True)
 
     def validate(self, attrs):
-        attempt_id_b64 = attrs['attempt_id']
-        question_id_b64 = attrs['question_id']
+        attempt_type, attempt_id = from_global_id(attrs.get('attempt_id'))
+        question_type, question_id = from_global_id(attrs.get('question_id'))
 
-        try:
-            attempt_id = get_id_from_value(UserAttemptType, attempt_id_b64)
-        except Exception as ex:
-            raise ValidationError({'attempt_id': [ex]})
+        if attempt_type != UserAttemptType.__name__:
+            detail = {
+                'attempt_id': [
+                    'Not valid value.',
+                ],
+            }
+            raise ValidationError(detail)
+
+        if question_type != QuestionType.__name__:
+            detail = {
+                'question_id': [
+                    'Not valid value.',
+                ],
+            }
+            raise ValidationError(detail)
 
         try:
             self._user_attempt = UserAttempt.objects.select_related(
@@ -41,11 +51,6 @@ class UserAnswerSerializer(serializers.Serializer):
                 ],
             }
             raise ValidationError(detail)
-
-        try:
-            question_id = get_id_from_value(QuestionType, question_id_b64)
-        except Exception as ex:
-            raise ValidationError({'question_id': [ex]})
 
         try:
             self._question = Question.objects.get(pk=question_id)
@@ -75,17 +80,16 @@ class UserAnswerSerializer(serializers.Serializer):
             raise PermissionDenied(detail)
 
         time_end = user_attempt.time_end
-        if time_end:
-            if timezone.now() > time_end:
-                detail = {
-                    'attempt_id': [
-                        (
-                            'The time for this attempt is over, the answers '
-                            'are no longer counted.'
-                        ),
-                    ],
-                }
-                raise PermissionDenied(detail)
+        if time_end and timezone.now() > time_end:
+            detail = {
+                'attempt_id': [
+                    (
+                        'The time for this attempt is over, the answers '
+                        'are no longer counted.'
+                    ),
+                ],
+            }
+            raise PermissionDenied(detail)
 
         question = self._question
         question_type = question.question_type
@@ -106,19 +110,16 @@ class UserAnswerSerializer(serializers.Serializer):
             true_answers = [answer.value for answer in true_answers]
         else:
             true_answers_id = [answer.id for answer in true_answers]
-            get_decoded_id = get_value_from_model_id
-
             true_answers = [
-                get_decoded_id('AnswerValueType', id) for id in true_answers_id
+                to_global_id('AnswerValueType', answer_id)
+                for answer_id in true_answers_id
             ]
-
-        user_answer_is_true = sorted(true_answers) == sorted(user_answers)
 
         try:
             user_answer = UserAnswer.objects.create(**{
                 'user_attempt': user_attempt,
                 'question': question,
-                'is_true': user_answer_is_true,
+                'is_true': sorted(true_answers) == sorted(user_answers),
             })
         except DjValidationError:
             detail = {

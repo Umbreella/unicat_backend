@@ -1,12 +1,13 @@
 import graphene
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from graphene import String, relay
 from graphene_django import DjangoObjectType
 from graphql import GraphQLError
 from graphql_jwt.decorators import login_required
+from graphql_relay import from_global_id
 
 from ..models.Question import Question
-from ..models.QuestionTypeChoices import QuestionTypeChoices
 from ..models.UserAttempt import UserAttempt
 from .AnswerValueType import AnswerValueType
 
@@ -23,17 +24,7 @@ class QuestionType(DjangoObjectType):
         )
 
     def resolve_answers(self, info):
-        question_type = self.question_type
-
-        if question_type == QuestionTypeChoices.FREE.value:
-            return []
-
-        return self.answers.order_by('?')
-
-
-class QuestionConnection(relay.Connection):
-    class Meta:
-        node = QuestionType
+        return info.context.loaders.answer_value_loader.load(self.id)
 
 
 class QuestionQuery(graphene.ObjectType):
@@ -42,10 +33,18 @@ class QuestionQuery(graphene.ObjectType):
     @login_required
     def resolve_questions(root, info, *args, **kwargs):
         global_attempt_id = kwargs.get('attempt_id')
-        attempt = relay.Node.get_node_from_global_id(info, global_attempt_id)
 
-        if not isinstance(attempt, UserAttempt):
-            raise GraphQLError('Not valid attemptId')
+        type_, attempt_id = from_global_id(global_attempt_id)
+
+        if type_ != 'UserAttemptType':
+            raise GraphQLError('attemptId: not valid value.')
+
+        try:
+            attempt = UserAttempt.objects.select_related(
+                'user_lesson'
+            ).get(pk=attempt_id)
+        except ObjectDoesNotExist:
+            raise GraphQLError('attemptId: not found value.')
 
         if attempt.user_lesson.user != info.context.user:
             raise GraphQLError('You don`t have access on this attempt.')
@@ -53,18 +52,10 @@ class QuestionQuery(graphene.ObjectType):
         cache_key = f'{global_attempt_id}_answered_questions'
         answered_questions_ids = cache.get(cache_key, [])
 
-        lesson_id = attempt.user_lesson.lesson_id
-        filter_fields = {
-            'lesson_id': lesson_id,
-        }
-        exclude_fields = {
+        data = Question.objects.filter(**{
+            'lesson_id': attempt.user_lesson.lesson_id,
+        }).exclude(**{
             'id__in': answered_questions_ids,
-        }
-
-        data = Question.objects.filter(
-            **filter_fields
-        ).exclude(
-            **exclude_fields
-        ).order_by('?')
+        }).order_by('?')
 
         return data

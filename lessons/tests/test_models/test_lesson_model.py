@@ -15,7 +15,7 @@ from ...models.LessonTypeChoices import LessonTypeChoices
 
 
 class LessonTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -39,7 +39,6 @@ class LessonTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -59,7 +58,7 @@ class LessonTestCase(TestCase):
     def test_Should_IncludeRequiredFields(self):
         expected_fields = [
             'children', 'questions', 'lesson_body', 'progress',
-            'id', 'course', 'serial_number', 'parent', 'title', 'description',
+            'id', 'course', 'parent', 'serial_number', 'title', 'description',
             'lesson_type', 'time_limit', 'count_questions', 'listeners',
         ]
         real_fields = [
@@ -91,6 +90,38 @@ class LessonTestCase(TestCase):
         }
 
         self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_HelpTextForEachField(self):
+        expected_help_text = {
+            'children': '',
+            'count_questions': (
+                'The number of questions in the test, calculated '
+                'automatically.'
+            ),
+            'course': 'The course that the lesson belongs to.',
+            'description': (
+                'A brief description of the lesson, which is displayed in '
+                'the course content tab.'
+            ),
+            'id': '',
+            'lesson_body': '',
+            'lesson_type': 'Type of lesson.',
+            'listeners': 'All users who have access to the lesson.',
+            'parent': 'Parent lesson in relation to the current.',
+            'progress': '',
+            'questions': '',
+            'serial_number': 'Sequence number of the lesson.',
+            'time_limit': 'time limit for tests, if necessary.',
+            'title': 'Lesson name.',
+        }
+        real_help_text = {
+            field.name: (
+                field.help_text if hasattr(field, 'help_text') else ''
+            )
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_help_text, real_help_text)
 
     def test_When_CreateLessonWithOutData_Should_ErrorBlankFields(self):
         lesson = self.tested_class()

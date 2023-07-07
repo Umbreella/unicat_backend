@@ -4,30 +4,24 @@ from rest_framework.serializers import CharField, ModelSerializer
 from ..models.Lesson import Lesson
 from ..models.LessonBody import LessonBody
 from ..models.LessonTypeChoices import LessonTypeChoices as LTChoices
-from .QuestionSerializer import QuestionSerializer
 
 
 class LessonSerializer(ModelSerializer):
     body = CharField(source='lesson_body.body', required=False)
-    questions = QuestionSerializer(required=False, many=True)
 
     class Meta:
         model = Lesson
         fields = (
-            'id', 'course', 'title', 'lesson_type', 'description', 'body',
-            'parent', 'questions',
+            'id', 'course', 'serial_number', 'title', 'lesson_type',
+            'description', 'body', 'parent',
         )
 
     def __init__(self, *args, **kwargs):
-        self._questions = None
         self._lesson_body = None
 
         super().__init__(*args, **kwargs)
 
     def validate(self, attrs):
-        if 'questions' in attrs:
-            self._questions = attrs.pop('questions')
-
         if 'lesson_body' in attrs:
             self._lesson_body = attrs.pop('lesson_body')
 
@@ -61,23 +55,11 @@ class LessonSerializer(ModelSerializer):
                 'lesson': lesson,
             })
 
-        if lesson.lesson_type == LTChoices.TEST:
-            questions = list(
-                map(lambda x: None if x.update({'lesson': lesson.id}) else x,
-                    self._questions),
-            )
-
-            serializer = QuestionSerializer(data=questions, many=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-
         return lesson
 
     def update(self, instance, validated_data):
         if instance.lesson_type == LTChoices.THEORY and self._lesson_body:
             instance.lesson_body.body = self._lesson_body['body']
             instance.lesson_body.save()
-
-        del validated_data['course']
 
         return super().update(instance, validated_data)

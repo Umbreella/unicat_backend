@@ -6,10 +6,20 @@ from .QuestionTypeChoices import QuestionTypeChoices as QTChoices
 
 
 class Question(models.Model):
-    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE,
-                               related_name='questions')
-    body = models.CharField(max_length=512)
-    question_type = models.PositiveSmallIntegerField(choices=QTChoices.choices)
+    lesson = models.ForeignKey(**{
+        'to': Lesson,
+        'on_delete': models.CASCADE,
+        'related_name': 'questions',
+        'help_text': 'The lesson to which this question relates.',
+    })
+    body = models.CharField(**{
+        'max_length': 512,
+        'help_text': 'Question body.',
+    })
+    question_type = models.PositiveSmallIntegerField(**{
+        'choices': QTChoices.choices,
+        'help_text': 'Question type by the number of correct answers.',
+    })
 
     def __iter__(self):
         for key in self.__dict__:

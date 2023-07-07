@@ -5,7 +5,7 @@ from ...serializers.AnswerValueSerializer import AnswerValueSerializer
 
 
 class AnswerValueSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

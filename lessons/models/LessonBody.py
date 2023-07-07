@@ -4,9 +4,15 @@ from .Lesson import Lesson
 
 
 class LessonBody(models.Model):
-    lesson = models.OneToOneField(Lesson, on_delete=models.CASCADE,
-                                  related_name='lesson_body')
-    body = models.TextField()
+    lesson = models.OneToOneField(**{
+        'to': Lesson,
+        'on_delete': models.CASCADE,
+        'related_name': 'lesson_body',
+        'help_text': 'The lesson to which the full content refers.',
+    })
+    body = models.TextField(**{
+        'help_text': 'Full content of the lesson.',
+    })
 
     def __iter__(self):
         for key in self.__dict__:

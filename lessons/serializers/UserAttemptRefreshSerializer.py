@@ -2,9 +2,8 @@ from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.utils import timezone
+from graphql_relay import to_global_id
 from rest_framework.exceptions import ValidationError
-
-from unicat.graphql.functions import get_value_from_model_id
 
 from ..models.UserAttempt import UserAttempt
 from .UserAttemptSerializer import UserAttemptSerializer
@@ -39,8 +38,7 @@ class UserAttemptRefreshSerializer(UserAttemptSerializer):
         user_attempt.time_end = timezone.now()
         user_attempt.save()
 
-        attempt_global_id = get_value_from_model_id('UserAttemptType',
-                                                    user_attempt.id)
+        attempt_global_id = to_global_id('UserAttemptType', user_attempt.id)
         cache_key = f'{attempt_global_id}_answered_questions'
         cache.delete(cache_key)
 

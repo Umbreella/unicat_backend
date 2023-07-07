@@ -14,7 +14,7 @@ from ...models.LessonTypeChoices import LessonTypeChoices
 
 
 class LessonBodyTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -38,7 +38,6 @@ class LessonBodyTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -82,6 +81,20 @@ class LessonBodyTestCase(TestCase):
         }
 
         self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_HelpTextForEachField(self):
+        expected_help_text = {
+            'body': 'Full content of the lesson.',
+            'id': '',
+            'lesson': 'The lesson to which the full content refers.',
+        }
+        real_help_text = {
+            field.name: (
+                field.help_text if hasattr(field, 'help_text') else ''
+            )
+            for field in self.tested_class._meta.get_fields()
+        }
+        self.assertEqual(expected_help_text, real_help_text)
 
     def test_When_CreateLessonBodyWithOutData_Should_ErrorBlankFields(self):
         lesson_body = self.tested_class()

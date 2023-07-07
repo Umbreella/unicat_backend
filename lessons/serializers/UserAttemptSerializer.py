@@ -1,8 +1,7 @@
 from django.core.cache import cache
+from graphql_relay import to_global_id
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-
-from unicat.graphql.functions import get_value_from_model_id
 
 from ..models.Lesson import Lesson
 from ..models.LessonTypeChoices import LessonTypeChoices
@@ -17,8 +16,7 @@ class UserAttemptSerializer(serializers.Serializer):
     lesson_id = serializers.IntegerField(write_only=True)
 
     def get_id(self, obj):
-        self.__attempt_global_id = get_value_from_model_id('UserAttemptType',
-                                                           obj.id)
+        self.__attempt_global_id = to_global_id('UserAttemptType', obj.id)
         return self.__attempt_global_id
 
     def get_count_answered_questions(self, obj):

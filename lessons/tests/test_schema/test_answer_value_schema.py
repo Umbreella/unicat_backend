@@ -6,7 +6,7 @@ from ...schema.AnswerValueType import AnswerValueType
 
 
 class AnswerValueTypeTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

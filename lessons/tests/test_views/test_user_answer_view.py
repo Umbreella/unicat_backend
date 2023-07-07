@@ -22,7 +22,7 @@ from ...views.UserAnswerView import UserAnswerView
 
 
 class UserAnswerViewTestCase(APITestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -51,7 +51,6 @@ class UserAnswerViewTestCase(APITestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -84,6 +83,7 @@ class UserAnswerViewTestCase(APITestCase):
         })
 
         question_open = Question.objects.create(**{
+            'id': 1,
             'lesson': lesson,
             'body': 'q' * 50,
             'question_type': QuestionTypeChoices.FREE,

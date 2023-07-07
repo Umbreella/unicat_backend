@@ -19,16 +19,18 @@ class UserLessonQuery(graphene.ObjectType):
 
     @login_required
     def resolve_my_lesson_history(root, info, **kwargs):
-        data = list(UserLesson.objects.filter(**{
+        data = list(UserLesson.objects.using('master').select_related(
+            'lesson'
+        ).filter(**{
             'user': info.context.user,
             'completed_at__gte': timezone.now() - timedelta(days=6),
         }).exclude(**{
             'lesson__lesson_type': LessonTypeChoices.THEME,
-        }).annotate(**{
-            'count_lesson': Count('completed_at'),
         }).values(
-            'completed_at', 'count_lesson',
-        ).order_by('-completed_at'))
+            'completed_at',
+        ).annotate(**{
+            'count_lesson': Count('completed_at'),
+        }).order_by('-completed_at'))
 
         history = []
         for i in range(7):

@@ -4,13 +4,13 @@ from django.urls import reverse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.filters import OrderingFilter, SearchFilter
-from rest_framework.permissions import IsAdminUser
 from rest_framework.test import APITestCase
 from rest_framework.viewsets import ModelViewSet
 
 from courses.models.Category import Category
 from courses.models.Course import Course
 from courses.models.LearningFormat import LearningFormat
+from unicat.permissions.DjModelPermForDRF import DjModelPermForDRF
 from users.models import User
 from users.models.Teacher import Teacher
 
@@ -23,7 +23,7 @@ from ...views.LessonView import LessonView
 
 
 class LessonViewTestCase(APITestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -52,7 +52,6 @@ class LessonViewTestCase(APITestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -103,7 +102,7 @@ class LessonViewTestCase(APITestCase):
 
     def test_Should_PermissionClassesIsAdminUser(self):
         expected_permission_classes = (
-            IsAdminUser,
+            DjModelPermForDRF,
         )
         real_permission_classes = self.tested_class.permission_classes
 
@@ -126,7 +125,7 @@ class LessonViewTestCase(APITestCase):
 
     def test_Should_FiltersetFieldsAsListOfDefinedFields(self):
         expected_filterset_fields = (
-            'course_id', 'parent',
+            'course', 'parent',
         )
         real_filterset_fields = self.tested_class.filterset_fields
 
@@ -172,15 +171,11 @@ class LessonViewTestCase(APITestCase):
 
         self.assertEqual(expected_methods, real_methods)
 
-    def test_Should_OverrideSuperMethods(self):
-        expected_methods = [
-            ModelViewSet.list,
-        ]
-        real_methods = [
-            self.tested_class.list,
-        ]
+    def test_Should_OverrideSuperMethodList(self):
+        expected_method = ModelViewSet.list
+        real_method = self.tested_class.list
 
-        self.assertNotEqual(expected_methods, real_methods)
+        self.assertNotEqual(expected_method, real_method)
 
     def test_When_PutMethodForListLessons_Should_ErrorWithStatus405(self):
         response = self.logged_client.put(self.url_for_list)

@@ -22,7 +22,7 @@ from ...schema.UserAttemptType import UserAttemptQuery, UserAttemptType
 
 
 class UserAttemptTypeTestCase(JSONWebTokenTestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -52,7 +52,6 @@ class UserAttemptTypeTestCase(JSONWebTokenTestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -240,7 +239,7 @@ class UserAttemptTypeTestCase(JSONWebTokenTestCase):
             'errors': [
                 {
                     'locations': [{'column': 17, 'line': 3, }, ],
-                    'message': 'lesson_id: This is not global Id.',
+                    'message': 'lessonId: not valid value.',
                     'path': ['myAttempts', ],
                 },
             ],

@@ -12,7 +12,7 @@ from ...tasks.UpdateCountLessonTask import update_count_lesson_task
 
 
 class UpdateCountLessonTaskTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -37,7 +37,6 @@ class UpdateCountLessonTaskTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -70,21 +69,6 @@ class UpdateCountLessonTaskTestCase(TestCase):
             )
             VALUES (1, 'q', 'q', 3, 0, 1);
             """)
-
-    def test_When_CourseIdIsNotFound_Should_StatusIsFAILURE(self):
-        task = self.tested_task.apply_async(kwargs={
-            'course_id': 2,
-            'lesson_type': 2,
-        })
-
-        expected_state = 'FAILURE'
-        real_state = task.state
-
-        expected_result = 'Course matching query does not exist.'
-        real_result = str(task.result)
-
-        self.assertEqual(expected_state, real_state)
-        self.assertEqual(expected_result, real_result)
 
     def test_When_LessonTypeIsNotValid_Should_StatusIsFAILURE(self):
         task = self.tested_task.apply_async(kwargs={

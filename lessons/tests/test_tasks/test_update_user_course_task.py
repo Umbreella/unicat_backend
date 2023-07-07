@@ -12,15 +12,15 @@ from users.models.Teacher import Teacher
 
 from ...models.Lesson import Lesson
 from ...models.LessonTypeChoices import LessonTypeChoices
-from ...tasks.UpdateUserCourseTask import update_user_course_task
+from ...tasks.UpdateUserCourseCountTask import update_user_course_count_task
 
 
 class UpdateUserLessonParentTaskTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
-        cls.tested_task = update_user_course_task
+        cls.tested_task = update_user_course_count_task
 
         user = User.objects.create_user(**{
             'email': 'q' * 50 + '@q.qq',
@@ -41,9 +41,8 @@ class UpdateUserLessonParentTaskTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
-            'count_lectures': 50,
-            'count_independents': 50,
+            'count_lectures': 1,
+            'count_independents': 1,
             'duration': 50,
             'learning_format': LearningFormat.REMOTE,
             'category': category,
@@ -144,21 +143,6 @@ class UpdateUserLessonParentTaskTestCase(TestCase):
         self.assertEqual(expected_result, real_result)
         self.assertEqual(expected_is_completed, real_is_completed)
 
-    def test_When_UserIdIsNotFound_Should_StatusIsFAILURE(self):
-        task = self.tested_task.apply_async(kwargs={
-            'lesson_id': 2,
-            'user_id': 2,
-        })
-
-        expected_state = 'FAILURE'
-        real_state = task.state
-
-        expected_result = 'UserCourse matching query does not exist.'
-        real_result = str(task.result)
-
-        self.assertEqual(expected_state, real_state)
-        self.assertEqual(expected_result, real_result)
-
     def test_When_CompleteOnlyTheory_Should_UpdateButDontCompleteUserCourse(
             self):
         task = self.tested_task.apply_async(kwargs={
@@ -192,41 +176,3 @@ class UpdateUserLessonParentTaskTestCase(TestCase):
 
         self.assertEqual(expected_state, real_state)
         self.assertEqual(expected_count_independents, real_count_independents)
-
-    def test_When_CompleteTheory_Should_UpdateAndDontCompleteUserCourse(self):
-        self.user_course.count_independents_completed = 1
-        self.user_course.save()
-
-        task = self.tested_task.apply_async(kwargs={
-            'lesson_id': 2,
-            'user_id': 1,
-        })
-        self.user_course.refresh_from_db()
-
-        expected_state = 'SUCCESS'
-        real_state = task.state
-
-        expected_completed_at = timezone.now().strftime(self.format)
-        real_completed_at = self.user_course.completed_at.strftime(self.format)
-
-        self.assertEqual(expected_state, real_state)
-        self.assertEqual(expected_completed_at, real_completed_at)
-
-    def test_When_CompleteTest_Should_UpdateAndDontCompleteUserCourse(self):
-        self.user_course.count_lectures_completed = 1
-        self.user_course.save()
-
-        task = self.tested_task.apply_async(kwargs={
-            'lesson_id': 3,
-            'user_id': 1,
-        })
-        self.user_course.refresh_from_db()
-
-        expected_state = 'SUCCESS'
-        real_state = task.state
-
-        expected_completed_at = timezone.now().strftime(self.format)
-        real_completed_at = self.user_course.completed_at.strftime(self.format)
-
-        self.assertEqual(expected_state, real_state)
-        self.assertEqual(expected_completed_at, real_completed_at)

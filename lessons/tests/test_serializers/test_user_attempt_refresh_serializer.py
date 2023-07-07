@@ -23,7 +23,7 @@ from ...serializers.UserAttemptSerializer import UserAttemptSerializer
 
 
 class UserAttemptRefreshSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -47,7 +47,6 @@ class UserAttemptRefreshSerializerTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,

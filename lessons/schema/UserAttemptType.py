@@ -3,19 +3,16 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from graphene import String, relay
 from graphene_django import DjangoObjectType
-from graphene_django.filter import DjangoFilterConnectionField
 from graphql import GraphQLError
 from graphql_jwt.decorators import login_required
+from graphql_relay import from_global_id
 
 from courses.models.UserCourse import UserCourse
-from unicat.graphql.functions import get_id_from_value
 
-from ..filtersets.UserAttemptFilterSet import UserAttemptFilterSet
 from ..models.Lesson import Lesson
 from ..models.LessonTypeChoices import LessonTypeChoices
 from ..models.UserAttempt import UserAttempt
 from ..models.UserLesson import UserLesson
-from .LessonType import LessonType
 
 
 class UserAttemptType(DjangoObjectType):
@@ -29,27 +26,25 @@ class UserAttemptType(DjangoObjectType):
         )
 
     def resolve_duration(self, info):
-        duration = self.time_end - self.time_start
+        return int((self.time_end - self.time_start).total_seconds())
 
-        return duration.total_seconds()
+
+class UserAttemptTypeConnection(relay.Connection):
+    class Meta:
+        node = UserAttemptType
 
 
 class UserAttemptQuery(graphene.ObjectType):
-    my_attempts = DjangoFilterConnectionField(**{
-        'type_': UserAttemptType,
-        'filterset_class': UserAttemptFilterSet,
-        'lesson_id': String(required=True),
-    })
+    my_attempts = relay.ConnectionField(UserAttemptTypeConnection,
+                                        lesson_id=String(required=True))
 
     @login_required
     def resolve_my_attempts(root, info, *args, **kwargs):
         user = info.context.user
-        lesson_id_b64 = kwargs.get('lesson_id')
+        type_, lesson_id = from_global_id(kwargs.get('lesson_id'))
 
-        try:
-            lesson_id = get_id_from_value(LessonType, lesson_id_b64)
-        except Exception as ex:
-            raise GraphQLError(f'lesson_id: {ex}')
+        if type_ != 'LessonType':
+            raise GraphQLError('lessonId: not valid value.')
 
         try:
             lesson = Lesson.objects.get(pk=lesson_id)
@@ -72,7 +67,7 @@ class UserAttemptQuery(graphene.ObjectType):
             'user': user,
         })
 
-        queryset = UserAttempt.objects.filter(**{
+        queryset = UserAttempt.objects.using('master').filter(**{
             'user_lesson': user_lesson,
             'time_end__lte': timezone.now(),
         }).order_by('-time_end')

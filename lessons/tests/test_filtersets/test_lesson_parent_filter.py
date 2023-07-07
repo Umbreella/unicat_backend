@@ -1,5 +1,3 @@
-from types import SimpleNamespace
-
 from django.test import TestCase
 from rest_framework.filters import BaseFilterBackend
 
@@ -8,13 +6,13 @@ from ...models.Lesson import Lesson
 
 
 class LessonParentFilterTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
         cls.tested_class = LessonParentFilter
         cls.target_database = 'master'
-        cls.request = SimpleNamespace()
+        cls.request = type('request', (object,), {})
 
     def test_Should_InheritBaseFilterBackend(self):
         expected_super_classes = (
@@ -91,7 +89,7 @@ class LessonParentFilterTestCase(TestCase):
     def test_When_QueryParamParentOnlyIs1_Should_ChangeQuerySet(self):
         request = self.request
         request.query_params = {
-            'parent_only': 1,
+            'parent_only': '1',
         }
 
         expected_queryset = Lesson.objects.filter(**{

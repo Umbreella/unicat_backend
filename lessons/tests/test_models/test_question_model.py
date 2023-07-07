@@ -16,7 +16,7 @@ from ...models.QuestionTypeChoices import QuestionTypeChoices
 
 
 class QuestionTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -40,7 +40,6 @@ class QuestionTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -90,6 +89,24 @@ class QuestionTestCase(TestCase):
         }
 
         self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_HelpTextForEachField(self):
+        expected_help_text = {
+            'answers': '',
+            'body': 'Question body.',
+            'id': '',
+            'lesson': 'The lesson to which this question relates.',
+            'question_type': 'Question type by the number of correct answers.',
+            'user_answers': '',
+        }
+        real_help_text = {
+            field.name: (
+                field.help_text if hasattr(field, 'help_text') else ''
+            )
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_help_text, real_help_text)
 
     def test_When_CreateQuestionWithOutData_Should_ErrorBlankFields(self):
         question = self.tested_class()

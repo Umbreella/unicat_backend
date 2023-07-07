@@ -23,7 +23,7 @@ from ...serializers.UserAnswerSerializer import UserAnswerSerializer
 
 
 class UserAnswerSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -52,7 +52,6 @@ class UserAnswerSerializerTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -101,11 +100,13 @@ class UserAnswerSerializerTestCase(TestCase):
         AnswerValue.objects.create(**{
             'question': question_open,
             'value': 'q' * 50,
+            'is_true': True,
         })
 
         AnswerValue.objects.create(**{
             'question': question_choice,
             'value': 'q' * 50,
+            'is_true': True,
         })
 
         #   'VXNlckF0dGVtcHRUeXBlOjE=' - 'UserAttemptType:1'
@@ -218,7 +219,7 @@ class UserAnswerSerializerTestCase(TestCase):
         expected_errors = {
             'attempt_id': [
                 ErrorDetail(**{
-                    'string': 'This is not global Id.',
+                    'string': 'Not valid value.',
                     'code': 'invalid',
                 }),
             ],
@@ -241,7 +242,7 @@ class UserAnswerSerializerTestCase(TestCase):
         expected_errors = {
             'question_id': [
                 ErrorDetail(**{
-                    'string': 'This is not global Id.',
+                    'string': 'Not valid value.',
                     'code': 'invalid',
                 }),
             ],

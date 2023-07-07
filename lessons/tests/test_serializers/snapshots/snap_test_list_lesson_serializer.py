@@ -8,7 +8,7 @@ snapshots = Snapshot()
 
 snapshots['ListLessonSerializerTestCase::test_Should_SpecificFormatForEachField 1'] = '''ListLessonSerializer():
     id = IntegerField(label='ID', read_only=True)
-    title = CharField(max_length=255, required=False)
-    lesson_type = ChoiceField(choices=[(1, 'Тема'), (2, 'Теория'), (3, 'Тест')], validators=[<django.core.validators.MinValueValidator object>, <django.core.validators.MaxValueValidator object>])
-    serial_number = IntegerField(max_value=32767, min_value=0, required=False)
-    parent = PrimaryKeyRelatedField(allow_null=True, queryset=Lesson.objects.all(), required=False)'''
+    title = CharField(help_text='Lesson name.', max_length=255, required=False)
+    lesson_type = ChoiceField(choices=[(1, 'Тема'), (2, 'Теория'), (3, 'Тест')], help_text='Type of lesson.', validators=[<django.core.validators.MinValueValidator object>, <django.core.validators.MaxValueValidator object>])
+    serial_number = SerializerMethodField()
+    parent = PrimaryKeyRelatedField(allow_null=True, help_text='Parent lesson in relation to the current.', queryset=Lesson.objects.all(), required=False)'''

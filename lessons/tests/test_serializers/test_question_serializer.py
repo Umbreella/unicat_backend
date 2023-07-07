@@ -1,4 +1,3 @@
-from rest_framework.exceptions import ErrorDetail, ValidationError
 from rest_framework.serializers import ModelSerializer
 from snapshottest.django import TestCase
 
@@ -8,7 +7,6 @@ from courses.models.LearningFormat import LearningFormat
 from users.models import User
 from users.models.Teacher import Teacher
 
-from ...models.AnswerValue import AnswerValue
 from ...models.Lesson import Lesson
 from ...models.LessonTypeChoices import LessonTypeChoices
 from ...models.Question import Question
@@ -17,7 +15,7 @@ from ...serializers.QuestionSerializer import QuestionSerializer
 
 
 class QuestionSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -41,7 +39,6 @@ class QuestionSerializerTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -94,16 +91,6 @@ class QuestionSerializerTestCase(TestCase):
             'lesson': 1,
             'body': 'w' * 50,
             'question_type': QuestionTypeChoices.CHECKBOX.value,
-            'answers': [
-                {
-                    'value': 'q' * 50,
-                    'is_true': True,
-                },
-                {
-                    'value': 'q' * 50,
-                    'is_true': True,
-                },
-            ],
         }
 
         cls.data_with_free_answer = {
@@ -128,7 +115,7 @@ class QuestionSerializerTestCase(TestCase):
 
     def test_Should_IncludeDefiniteFieldsFromCommentModel(self):
         expected_fields = [
-            'id', 'body', 'question_type', 'lesson', 'answers',
+            'id', 'body', 'question_type', 'lesson',
         ]
         real_fields = list(self.tested_class().get_fields())
 
@@ -140,203 +127,15 @@ class QuestionSerializerTestCase(TestCase):
         self.assertMatchSnapshot(real_repr)
 
     def test_Should_DontOverrideSuperSaveMethod(self):
-        expected_method = ModelSerializer.save
-        real_method = self.tested_class.save
-
-        self.assertEqual(expected_method, real_method)
-
-    def test_Should_OverrideSuperCreateMethod(self):
-        expected_method = ModelSerializer.create
-        real_method = self.tested_class.create
-
-        self.assertNotEqual(expected_method, real_method)
-
-    def test_Should_OverrideSuperUpdateMethod(self):
-        expected_method = ModelSerializer.update
-        real_method = self.tested_class.update
-
-        self.assertNotEqual(expected_method, real_method)
-
-    def test_When_DataIsNotValid_Should_ErrorRequiredFields(
-            self):
-        data = self.data_with_one_answer
-        del data['lesson']
-
-        serializer = self.tested_class(data=data)
-        serializer.is_valid(raise_exception=True)
-
-        with self.assertRaises(ValidationError) as _raise:
-            serializer.save()
-
-        expected_raise = {
-            'lesson': [
-                ErrorDetail(**{
-                    'string': [
-                        'This field cannot be null.',
-                    ],
-                    'code': 'null',
-                }),
-            ],
-        }
-        real_raise = _raise.exception.detail
-
-        self.assertEqual(expected_raise, real_raise)
-
-    def test_When_QuestionWithOneTrueAnswer_Should_CreateQuestionAndAnswers(
-            self):
-        data = self.data_with_one_answer
-
-        serializer = self.tested_class(data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        expected_question = {
-            'id': 2,
-            'lesson_id': 1,
-            'body': 'w' * 50,
-            'question_type': 1,
-        }
-        real_question = dict(Question.objects.last())
-
-        expected_answers = [
-            {
-                'id': 1,
-                'question_id': 2,
-                'value': 'q' * 50,
-                'is_true': True,
-            },
-            {
-                'id': 2,
-                'question_id': 2,
-                'value': 'q' * 50,
-                'is_true': False,
-            },
+        expected_methods = [
+            ModelSerializer.save,
+            ModelSerializer.create,
+            ModelSerializer.update,
         ]
-        real_answers = [dict(answer) for answer in AnswerValue.objects.all()]
-
-        self.assertEqual(expected_question, real_question)
-        self.assertEqual(expected_answers, real_answers)
-
-    def test_When_QuestionWithManyTrueAnswers_Should_CreateQuestionAndAnswers(
-            self):
-        data = self.data_with_many_answer
-
-        serializer = self.tested_class(data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        expected_question = {
-            'id': 2,
-            'lesson_id': 1,
-            'body': 'w' * 50,
-            'question_type': 2,
-        }
-        real_question = dict(Question.objects.last())
-
-        expected_answers = [
-            {
-                'id': 1,
-                'question_id': 2,
-                'value': 'q' * 50,
-                'is_true': True,
-            },
-            {
-                'id': 2,
-                'question_id': 2,
-                'value': 'q' * 50,
-                'is_true': True,
-            },
+        real_methods = [
+            self.tested_class.save,
+            self.tested_class.create,
+            self.tested_class.update,
         ]
-        real_answers = [dict(answer) for answer in AnswerValue.objects.all()]
 
-        self.assertEqual(expected_question, real_question)
-        self.assertEqual(expected_answers, real_answers)
-
-    def test_When_QuestionWithOnlyOneTrueAnswer_Should_CreateQuestionAndAnswer(
-            self):
-        data = self.data_with_free_answer
-
-        serializer = self.tested_class(data=data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        expected_question = {
-            'id': 2,
-            'lesson_id': 1,
-            'body': 'w' * 50,
-            'question_type': 3,
-        }
-        real_question = dict(Question.objects.last())
-
-        expected_answers = [
-            {
-                'id': 1,
-                'question_id': 2,
-                'value': 'q' * 50,
-                'is_true': True,
-            },
-        ]
-        real_answers = [dict(answer) for answer in AnswerValue.objects.all()]
-
-        self.assertEqual(expected_question, real_question)
-        self.assertEqual(expected_answers, real_answers)
-
-    def test_When_QuestionWithOnlyOneTrueAnswerButAnswersMuch_Should_Error(
-            self):
-        data = self.data_with_free_answer
-        data.update({
-            'answers': [
-                {
-                    'value': 'q' * 50,
-                    'is_true': True,
-                },
-                {
-                    'value': 'q' * 50,
-                    'is_true': True,
-                },
-            ],
-        })
-
-        serializer = self.tested_class(data=data)
-        serializer.is_valid(raise_exception=True)
-
-        with self.assertRaises(ValidationError) as _raise:
-            serializer.save()
-
-        expected_raise = {
-            'answers': [
-                ErrorDetail(**{
-                    'string': 'Much values for this question_type.',
-                    'code': 'invalid',
-                }),
-            ],
-        }
-        real_raise = _raise.exception.detail
-
-        self.assertEqual(expected_raise, real_raise)
-
-    def test_When_UpdateQuestion_Should_DontChangeLessonAndAnswers(self):
-        data = self.data_with_free_answer
-        data.update({
-            'lesson': 2,
-        })
-
-        serializer = self.tested_class(data=data, instance=self.question)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        self.question.refresh_from_db()
-
-        expected_question = {
-            'id': 1,
-            'lesson': 1,
-            'body': 'w' * 50,
-            'question_type': 3,
-        }
-        real_question = serializer.data
-
-        expected_count_answers = 0
-        real_count_answers = len(AnswerValue.objects.all())
-
-        self.assertEqual(expected_question, real_question)
-        self.assertEqual(expected_count_answers, real_count_answers)
+        self.assertEqual(expected_methods, real_methods)

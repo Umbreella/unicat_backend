@@ -4,19 +4,24 @@ from .Question import Question
 
 
 class AnswerValue(models.Model):
-    question = models.ForeignKey(Question, on_delete=models.CASCADE,
-                                 related_name='answers')
-    value = models.CharField(max_length=128)
-    is_true = models.BooleanField(default=True)
-
-    def __iter__(self):
-        for key in self.__dict__:
-            if not key.startswith('_'):
-                yield key, getattr(self, key)
+    question = models.ForeignKey(**{
+        'to': Question,
+        'on_delete': models.CASCADE,
+        'related_name': 'answers',
+        'help_text': 'The question to which this answer was created.',
+    })
+    value = models.CharField(**{
+        'max_length': 128,
+        'help_text': 'Answer body.',
+    })
+    is_true = models.BooleanField(**{
+        'default': False,
+        'help_text': 'Is this answer correct or not.',
+    })
 
     def save(self, *args, **kwargs):
-        self.full_clean()
-
         self.value = self.value.strip()
+
+        self.full_clean()
 
         super().save(*args, **kwargs)

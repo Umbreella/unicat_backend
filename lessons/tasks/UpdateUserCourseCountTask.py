@@ -9,13 +9,13 @@ from ..models.LessonTypeChoices import LessonTypeChoices
 
 
 @shared_task(base=Singleton)
-def update_user_course_task(lesson_id: int, user_id: int):
+def update_user_course_count_task(lesson_id: int, user_id: int):
     from ..models.UserLesson import UserLesson
 
     with transaction.atomic(using='master'):
         lesson = Lesson.objects.select_related(
             'course'
-        ).using('master').get(pk=lesson_id)
+        ).get(pk=lesson_id)
         lesson_type = lesson.lesson_type
         course = lesson.course
 

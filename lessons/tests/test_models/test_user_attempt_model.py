@@ -20,7 +20,7 @@ from ...models.UserLesson import UserLesson
 
 
 class UserAttemptTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -44,7 +44,6 @@ class UserAttemptTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -126,6 +125,24 @@ class UserAttemptTestCase(TestCase):
         }
 
         self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_HelpTextForEachField(self):
+        expected_help_text = {
+            'count_true_answer': 'The number of correct answers.',
+            'id': '',
+            'time_end': 'Attempt completion time.',
+            'time_start': 'Attempt start time.',
+            'user_answers': '',
+            'user_lesson': 'The user lesson to which the attempt is attached.',
+        }
+        real_help_text = {
+            field.name: (
+                field.help_text if hasattr(field, 'help_text') else ''
+            )
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_help_text, real_help_text)
 
     def test_When_CreateUserAttemptWithOutData_Should_ErrorBlankFields(self):
         user_attempt = self.tested_class()
@@ -234,11 +251,11 @@ class UserAttemptTestCase(TestCase):
     def test_When_CountTrueAnswersGreater60Percent_Should_UpdateUserLesson(
             self):
         data = self.data_without_time_limit
-        data.update({
-            'count_true_answer': 6,
-        })
 
         user_attempt = self.tested_class(**data)
+        user_attempt.save()
+
+        user_attempt.count_true_answer = 6
         user_attempt.save()
 
         user_lesson = user_attempt.user_lesson

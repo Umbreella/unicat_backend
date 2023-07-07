@@ -2,13 +2,13 @@ from django.urls import reverse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.filters import OrderingFilter
-from rest_framework.permissions import IsAdminUser
 from rest_framework.test import APITestCase
 from rest_framework.viewsets import ModelViewSet
 
 from courses.models.Category import Category
 from courses.models.Course import Course
 from courses.models.LearningFormat import LearningFormat
+from unicat.permissions.DjModelPermForDRF import DjModelPermForDRF
 from users.models import User
 from users.models.Teacher import Teacher
 
@@ -22,7 +22,7 @@ from ...views.AnswerValueView import AnswerValueView
 
 
 class AnswerValueViewTestCase(APITestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -52,7 +52,6 @@ class AnswerValueViewTestCase(APITestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -112,7 +111,7 @@ class AnswerValueViewTestCase(APITestCase):
 
     def test_Should_PermissionClassesIsAdminUser(self):
         expected_permission_classes = (
-            IsAdminUser,
+            DjModelPermForDRF,
         )
         real_permission_classes = self.tested_class.permission_classes
 
@@ -134,7 +133,7 @@ class AnswerValueViewTestCase(APITestCase):
 
     def test_Should_FiltersetFieldsAsListOfDefinedFields(self):
         expected_filterset_fields = (
-            'question_id',
+            'question',
         )
         real_filterset_fields = self.tested_class.filterset_fields
 

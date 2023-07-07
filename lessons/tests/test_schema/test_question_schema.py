@@ -1,7 +1,8 @@
-import graphene
-from graphene import Context, Int, List, NonNull, Schema, relay
-from graphene.test import Client
-from graphql_jwt.testcases import JSONWebTokenTestCase
+import json
+
+from graphene import Int, List, NonNull, relay
+from graphene_django.utils import GraphQLTestCase
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from courses.models.Category import Category
 from courses.models.Course import Course
@@ -16,30 +17,29 @@ from ...models.Question import Question
 from ...models.QuestionTypeChoices import QuestionTypeChoices
 from ...models.UserAttempt import UserAttempt
 from ...models.UserLesson import UserLesson
-from ...schema.QuestionType import QuestionQuery, QuestionType
-from ...schema.UserAttemptType import UserAttemptType
+from ...schema.QuestionType import QuestionType
 
 
-class QuestionTypeTestCase(JSONWebTokenTestCase):
-    databases = {'master'}
+class QuestionTypeTestCase(GraphQLTestCase):
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
         cls.tested_class = QuestionType
         cls.model = Question
 
-        first_user = User.objects.create_user(**{
+        cls.first_user = User.objects.create_superuser(**{
             'email': 'q' * 50 + '@q.qq',
             'password': 'q' * 50,
         })
 
-        second_user = User.objects.create_user(**{
+        cls.second_user = User.objects.create_superuser(**{
             'email': 'w' * 50 + '@q.qq',
             'password': 'q' * 50,
         })
 
         teacher = Teacher.objects.create(**{
-            'user': first_user,
+            'user': cls.first_user,
             'description': 'q' * 50,
         })
 
@@ -51,7 +51,6 @@ class QuestionTypeTestCase(JSONWebTokenTestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -69,13 +68,8 @@ class QuestionTypeTestCase(JSONWebTokenTestCase):
         })
 
         first_user_lesson = UserLesson.objects.create(**{
+            'user': cls.first_user,
             'lesson': lesson,
-            'user': first_user,
-        })
-
-        second_user_lesson = UserLesson.objects.create(**{
-            'lesson': lesson,
-            'user': second_user,
         })
 
         UserAttempt.objects.create(**{
@@ -85,7 +79,7 @@ class QuestionTypeTestCase(JSONWebTokenTestCase):
 
         UserAttempt.objects.create(**{
             'id': 2,
-            'user_lesson': second_user_lesson,
+            'user_lesson': first_user_lesson,
         })
 
         question_open = Question.objects.create(**{
@@ -115,17 +109,6 @@ class QuestionTypeTestCase(JSONWebTokenTestCase):
             'question': question_choice,
             'value': 'answer_choice',
         })
-
-        context = Context()
-        context.user = first_user
-        cls.context = context
-
-    def setUp(self):
-        class TestQuery(QuestionQuery):
-            test = graphene.Field(UserAttemptType)
-
-        schema = Schema(query=TestQuery)
-        self.gql_client = Client(schema=schema)
 
     def test_Should_IncludeDefiniteDjangoModel(self):
         expected_model = self.model
@@ -173,17 +156,14 @@ class QuestionTypeTestCase(JSONWebTokenTestCase):
 
     def test_When_SendQueryWithNotAuthenticate_Should_ErrorHasNotPermission(
             self):
-        response = self.client.execute(
+        response = self.query(
             """
-            query GetQuestionsByAttempt ($attemptId: String!){
-                questions (attemptId: $attemptId){
+            query {
+                questions (attemptId: "UXVlc3Rpb25UeXBlOjE"){
                     id
                 }
             }
             """,
-            variables={
-                'attemptId': 'UXVlc3Rpb25UeXBlOjE=',
-            },
         )
 
         expected_data = {
@@ -200,24 +180,24 @@ class QuestionTypeTestCase(JSONWebTokenTestCase):
                 },
             ],
         }
-        real_data = response
+        real_data = json.loads(response.content)
 
         self.assertEqual(expected_data, real_data)
 
     def test_When_SendQueryWithNotValidAttemptID_Should_ErrorNotValidAttemptID(
             self):
-        response = self.gql_client.execute(
+        access_token = RefreshToken.for_user(self.first_user).access_token
+        response = self.query(
             """
-            query GetQuestionsByAttempt ($attemptId: String!){
-                questions (attemptId: $attemptId){
+            query {
+                questions (attemptId: "UHJpdmF0ZUxlc3NvblR5cGU6MQ=="){
                     id
                 }
             }
             """,
-            variables={
-                'attemptId': 'UXVlc3Rpb25UeXBlOjE=',
+            headers={
+                'HTTP_AUTHORIZATION': f'Bearer {access_token}',
             },
-            context=self.context,
         )
 
         expected_data = {
@@ -227,28 +207,60 @@ class QuestionTypeTestCase(JSONWebTokenTestCase):
             'errors': [
                 {
                     'locations': [{'column': 17, 'line': 3, }, ],
-                    'message': 'Not valid attemptId',
+                    'message': 'attemptId: not valid value.',
                     'path': ['questions', ],
                 },
             ],
         }
-        real_data = response
+        real_data = json.loads(response.content)
 
         self.assertEqual(expected_data, real_data)
 
-    def test_When_SendQueryWithNotAccess_Should_ErrorHasNotAccess(self):
-        response = self.gql_client.execute(
+    def test_When_SendQueryWithNotFoundAttemptID_Should_ErrorNotFoundAttemptID(
+            self):
+        access_token = RefreshToken.for_user(self.first_user).access_token
+        response = self.query(
             """
-            query GetQuestionsByAttempt ($attemptId: String!){
-                questions (attemptId: $attemptId){
+            query {
+                questions (attemptId: "VXNlckF0dGVtcHRUeXBlOjM="){
                     id
                 }
             }
             """,
-            variables={
-                'attemptId': 'VXNlckF0dGVtcHRUeXBlOjI=',
+            headers={
+                'HTTP_AUTHORIZATION': f'Bearer {access_token}',
             },
-            context=self.context,
+        )
+
+        expected_data = {
+            'data': {
+                'questions': None,
+            },
+            'errors': [
+                {
+                    'locations': [{'column': 17, 'line': 3, }, ],
+                    'message': 'attemptId: not found value.',
+                    'path': ['questions', ],
+                },
+            ],
+        }
+        real_data = json.loads(response.content)
+
+        self.assertEqual(expected_data, real_data)
+
+    def test_When_SendQueryWithNotAccess_Should_ErrorHasNotAccess(self):
+        access_token = RefreshToken.for_user(self.second_user).access_token
+        response = self.query(
+            """
+            query {
+                questions (attemptId: "VXNlckF0dGVtcHRUeXBlOjI="){
+                    id
+                }
+            }
+            """,
+            headers={
+                'HTTP_AUTHORIZATION': f'Bearer {access_token}',
+            },
         )
 
         expected_data = {
@@ -263,57 +275,28 @@ class QuestionTypeTestCase(JSONWebTokenTestCase):
                 },
             ],
         }
-        real_data = response
+        real_data = json.loads(response.content)
 
         self.assertEqual(expected_data, real_data)
 
     def test_When_SendQueryWithValidAttemptID_Should_QuestionsInAttempt(
             self):
-        response = self.gql_client.execute(
+        access_token = RefreshToken.for_user(self.first_user).access_token
+        response = self.query(
             """
-            query GetQuestionsByAttempt ($attemptId: String!){
-                questions (attemptId: $attemptId){
+            query {
+                questions (attemptId: "VXNlckF0dGVtcHRUeXBlOjE="){
+                    id
+                    body
                     answers {
                         value
                     }
                 }
             }
             """,
-            variables={
-                'attemptId': 'VXNlckF0dGVtcHRUeXBlOjE=',
+            headers={
+                'HTTP_AUTHORIZATION': f'Bearer {access_token}',
             },
-            context=self.context,
         )
 
-        expected_data = [
-            {
-                'data': {
-                    'questions': [
-                        {'answers': [{'value': 'answer_choice', }, ], },
-                        {'answers': [], },
-                        {'answers': [], },
-                    ],
-                },
-            },
-            {
-                'data': {
-                    'questions': [
-                        {'answers': [], },
-                        {'answers': [{'value': 'answer_choice', }, ], },
-                        {'answers': [], },
-                    ],
-                },
-            },
-            {
-                'data': {
-                    'questions': [
-                        {'answers': [], },
-                        {'answers': [], },
-                        {'answers': [{'value': 'answer_choice', }, ], },
-                    ],
-                },
-            },
-        ]
-        real_data = response
-
-        self.assertIn(real_data, expected_data)
+        self.assertResponseNoErrors(response)

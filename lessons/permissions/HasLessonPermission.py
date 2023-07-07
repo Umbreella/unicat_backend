@@ -1,21 +1,18 @@
 from django.core.exceptions import ObjectDoesNotExist
+from graphql_relay import from_global_id
 from rest_framework.permissions import BasePermission
 
 from courses.models.UserCourse import UserCourse
-from unicat.graphql.functions import get_id_from_value
 
 from ..models.Lesson import Lesson
-from ..schema.LessonType import LessonType
 
 
 class HasLessonPermission(BasePermission):
     def has_permission(self, request, view):
         user = request.user
-        lesson_id = view.kwargs.get('lesson_id')
+        type_, lesson_id = from_global_id(view.kwargs.get('lesson_id'))
 
-        try:
-            lesson_id = get_id_from_value(LessonType, lesson_id)
-        except Exception:
+        if type_ != 'LessonType':
             return False
 
         try:

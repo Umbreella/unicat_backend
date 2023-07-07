@@ -37,9 +37,7 @@ class UserAttemptView(ListCreateAPIView):
 
         order_result = F('time_end').desc(nulls_last=True)
 
-        active_attempt = UserAttempt.objects.using(
-            'master'
-        ).filter(
+        active_attempt = UserAttempt.objects.using('master').filter(
             filter_by_time_end
         ).order_by(
             order_result

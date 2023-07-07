@@ -9,7 +9,7 @@ from ...views.QuestionTypeView import QuestionTypeView
 
 
 class QuestionTypeViewTestCase(APITestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -50,12 +50,8 @@ class QuestionTypeViewTestCase(APITestCase):
         self.assertEqual(expected_fields, real_fields)
 
     def test_Should_OverrideSuperFields(self):
-        expected_fields = [
-            IntegerChoiceView.integer_choices,
-        ]
-        real_fields = [
-            self.tested_class.integer_choices,
-        ]
+        expected_fields = IntegerChoiceView.integer_choices
+        real_fields = self.tested_class.integer_choices
 
         self.assertNotEqual(expected_fields, real_fields)
 
@@ -177,3 +173,14 @@ class QuestionTypeViewTestCase(APITestCase):
 
         self.assertEqual(expected_status, real_status)
         self.assertEqual(expected_data, real_data)
+
+    def test_When_GetMethodForSingleQuestionTyp_Should_ErrorWithStatus404(
+            self):
+        url_not_found = reverse('single_question_type', kwargs={'pk': 10, })
+
+        response = self.logged_client.get(url_not_found)
+
+        expected_status = status.HTTP_404_NOT_FOUND
+        real_status = response.status_code
+
+        self.assertEqual(expected_status, real_status)

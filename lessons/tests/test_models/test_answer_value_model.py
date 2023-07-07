@@ -16,7 +16,7 @@ from ...models.QuestionTypeChoices import QuestionTypeChoices
 
 
 class AnswerValueTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -40,7 +40,6 @@ class AnswerValueTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -92,6 +91,20 @@ class AnswerValueTestCase(TestCase):
 
         self.assertEqual(expected_fields, real_fields)
 
+    def test_Should_HelpTextForEachField(self):
+        expected_help_text = {
+            'id': '',
+            'is_true': 'Is this answer correct or not.',
+            'question': 'The question to which this answer was created.',
+            'value': 'Answer body.',
+        }
+        real_help_text = {
+            field.name: field.help_text
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_help_text, real_help_text)
+
     def test_When_CreateAnswerValueWithOutData_Should_ErrorBlankFields(self):
         answer_value = self.tested_class()
 
@@ -138,4 +151,4 @@ class AnswerValueTestCase(TestCase):
 
         real_is_true = answer_value.is_true
 
-        self.assertTrue(real_is_true)
+        self.assertFalse(real_is_true)

@@ -12,7 +12,7 @@ def update_user_lesson_parent_task(lesson_id: int, user_id: int):
     from ..models.UserLesson import UserLesson
 
     with transaction.atomic(using='master'):
-        lesson = Lesson.objects.using('master').get(pk=lesson_id)
+        lesson = Lesson.objects.get(pk=lesson_id)
         parent = lesson.parent
 
         if lesson.lesson_type == LessonTypeChoices.THEME.value or not parent:
@@ -20,12 +20,12 @@ def update_user_lesson_parent_task(lesson_id: int, user_id: int):
 
         lesson_ids = Lesson.objects.filter(**{
             'parent_id': parent.id,
-        }).values_list('id', flat=True).using('master')
+        }).values_list('id', flat=True)
 
-        completed_lessons = UserLesson.objects.filter(**{
+        completed_lessons = UserLesson.objects.using('master').filter(**{
             'lesson_id__in': lesson_ids,
             'completed_at__isnull': False,
-        }).values_list('id', flat=True).using('master')
+        }).values_list('id', flat=True)
 
         if len(lesson_ids) == len(completed_lessons):
             parent, is_created = UserLesson.objects.using(
