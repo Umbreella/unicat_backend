@@ -4,15 +4,51 @@ from .Course import Course
 
 
 class CourseStat(models.Model):
-    course = models.OneToOneField(Course, on_delete=models.CASCADE,
-                                  related_name='statistic')
-    avg_rating = models.DecimalField(default=0, max_digits=2, decimal_places=1)
-    count_comments = models.PositiveIntegerField(default=0)
-    count_five_rating = models.PositiveIntegerField(default=0)
-    count_four_rating = models.PositiveIntegerField(default=0)
-    count_three_rating = models.PositiveIntegerField(default=0)
-    count_two_rating = models.PositiveIntegerField(default=0)
-    count_one_rating = models.PositiveIntegerField(default=0)
+    course = models.OneToOneField(**{
+        'to': Course,
+        'on_delete': models.CASCADE,
+        'related_name': 'statistic',
+        'help_text': 'The course for which statistics are collected.',
+    })
+    count_comments = models.PositiveIntegerField(**{
+        'default': 0,
+        'help_text': 'Total number of all comments.',
+    })
+    count_five_rating = models.PositiveIntegerField(**{
+        'default': 0,
+        'help_text': (
+            'Number of comments with a rating of 5, calculated at the time '
+            'of creating a comment to the course'
+        ),
+    })
+    count_four_rating = models.PositiveIntegerField(**{
+        'default': 0,
+        'help_text': (
+            'Number of comments with a rating of 4, calculated at the time '
+            'of creating a comment to the course'
+        ),
+    })
+    count_three_rating = models.PositiveIntegerField(**{
+        'default': 0,
+        'help_text': (
+            'Number of comments with a rating of 3, calculated at the time '
+            'of creating a comment to the course'
+        ),
+    })
+    count_two_rating = models.PositiveIntegerField(**{
+        'default': 0,
+        'help_text': (
+            'Number of comments with a rating of 2, calculated at the time '
+            'of creating a comment to the course'
+        ),
+    })
+    count_one_rating = models.PositiveIntegerField(**{
+        'default': 0,
+        'help_text': (
+            'Number of comments with a rating of 1, calculated at the time '
+            'of creating a comment to the course'
+        ),
+    })
 
     def __iter__(self):
         for key in self.__dict__:
@@ -39,8 +75,9 @@ class CourseStat(models.Model):
                 self.count_one_rating,
             ])
 
-            self.avg_rating = sum_rating / self.count_comments
+            self.course.avg_rating = round(sum_rating / self.count_comments, 2)
         else:
-            self.avg_rating = 0
+            self.course.avg_rating = 0
 
         super().save(*args, **kwargs)
+        self.course.save()

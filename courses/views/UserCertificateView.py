@@ -2,13 +2,12 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.template.loader import get_template
 from django_weasyprint import WeasyTemplateResponseMixin
+from graphql_relay import from_global_id
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.serializers import Serializer
 from weasyprint import CSS, HTML
-
-from unicat.graphql.functions import get_id_from_value
 
 from ..models.UserCourse import UserCourse
 from ..schema.CourseType import CourseType
@@ -20,9 +19,15 @@ class UserCertificateView(ListAPIView, WeasyTemplateResponseMixin):
 
     def get(self, request, *args, **kwargs):
         user = request.user
-        course_id_b64 = kwargs.get('course_id')
+        type_, course_id = from_global_id(kwargs.get('course_id'))
 
-        course_id = get_id_from_value(CourseType, course_id_b64)
+        if type_ != CourseType.__name__:
+            detail = {
+                'course_id': [
+                    'Not valid value.',
+                ],
+            }
+            raise ValidationError(detail)
 
         try:
             user_course = UserCourse.objects.get(**{

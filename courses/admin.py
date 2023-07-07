@@ -11,8 +11,8 @@ from .models.UserCourse import UserCourse
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ('title', 'teacher', 'price', 'discount',
-                    'learning_format', 'category',)
+    list_display = ('title', 'teacher', 'price', 'learning_format',
+                    'category',)
     list_filter = ('title', 'teacher', 'learning_format', 'category',)
 
 
@@ -23,11 +23,11 @@ class CourseBodyAdmin(SummernoteModelAdmin):
 
 @admin.register(CourseStat)
 class CourseStatAdmin(admin.ModelAdmin):
-    list_display = ('course', 'avg_rating', 'count_comments',
+    list_display = ('course', 'count_comments',
                     'count_five_rating', 'count_four_rating',
                     'count_three_rating', 'count_two_rating',
                     'count_one_rating',)
-    list_filter = ('course', 'avg_rating', 'count_comments',
+    list_filter = ('course', 'count_comments',
                    'count_five_rating', 'count_four_rating',
                    'count_three_rating', 'count_two_rating',
                    'count_one_rating',)

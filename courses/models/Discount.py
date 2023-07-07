@@ -8,12 +8,22 @@ from ..models.Course import Course
 
 
 class Discount(models.Model):
-    course = models.ForeignKey(to=Course, on_delete=models.CASCADE,
-                               related_name='discounts')
-    percent = models.IntegerField(validators=[MinValueValidator(1),
-                                              MaxValueValidator(100), ])
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
+    course = models.ForeignKey(**{
+        'to': Course,
+        'on_delete': models.CASCADE,
+        'related_name': 'discounts',
+        'help_text': 'The course for which the discount was created.',
+    })
+    percent = models.IntegerField(**{
+        'validators': [MinValueValidator(1), MaxValueValidator(100), ],
+        'help_text': 'Discount percentage, from 0 to 100.',
+    })
+    start_date = models.DateTimeField(**{
+        'help_text': 'Discount start date.',
+    })
+    end_date = models.DateTimeField(**{
+        'help_text': 'Discount end date.',
+    })
 
     def __str__(self):
         return f'{self.course} - {self.percent}%'

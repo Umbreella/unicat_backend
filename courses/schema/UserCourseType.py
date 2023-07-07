@@ -27,8 +27,7 @@ class UserCourseQuery(graphene.ObjectType):
         }).exists()
 
         if not has_access:
-            detail = 'You don`t have access on this course.'
-            raise GraphQLError(detail)
+            raise GraphQLError('You don`t have access on this course.')
 
         return course
 

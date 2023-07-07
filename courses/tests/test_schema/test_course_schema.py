@@ -1,45 +1,45 @@
-import copy
+import json
 from datetime import timedelta
 
-from django.contrib.auth.models import AnonymousUser
+from django.conf import settings
 from django.db import connections
-from django.test import TestCase
 from django.utils import timezone
 from django.utils.connection import ConnectionProxy
-from graphene import Context, Float, NonNull, Schema, String
+from graphene import Context, Float, NonNull, Schema, String, relay
 from graphene.test import Client
+from graphene_django.utils import GraphQLTestCase
+from rest_framework_simplejwt.tokens import RefreshToken
 
+from unicat.graphql.loaders import Loaders
 from users.models import User
 from users.models.Teacher import Teacher
+from users.schema.TeacherType import TeacherType
 
 from ...models.Category import Category
 from ...models.Course import Course
 from ...models.CourseBody import CourseBody
 from ...models.LearningFormat import LearningFormat
 from ...models.UserCourse import UserCourse
+from ...schema.CategoryType import CategoryType
 from ...schema.CourseType import CourseQuery, CourseType
 from ...schema.DiscountType import DiscountType
 
 
-class CourseTypeTestCase(TestCase):
-    databases = {'master'}
+class CourseTypeTestCase(GraphQLTestCase):
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
         cls.tested_class = CourseType
+        cls.model = Course
 
-        first_user = User.objects.create_user(**{
+        cls.user = User.objects.create_superuser(**{
             'email': 'q' * 50 + '@q.qq',
             'password': 'q' * 50,
         })
 
-        second_user = User.objects.create_user(**{
-            'email': 'w' * 50 + '@q.qq',
-            'password': 'q' * 50,
-        })
-
         teacher = Teacher.objects.create(**{
-            'user': first_user,
+            'user': cls.user,
             'description': 'q' * 50,
         })
 
@@ -51,15 +51,11 @@ class CourseTypeTestCase(TestCase):
             'title': 'q' * 50,
         })
 
-        cls.course_title_q = 'q' * 50,
-        cls.course_title_w = 'w' * 50,
-
-        course_with_body = Course.objects.create(**{
+        course = Course.objects.create(**{
             'id': 1,
             'teacher': teacher,
-            'title': cls.course_title_q,
+            'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -69,42 +65,11 @@ class CourseTypeTestCase(TestCase):
             'short_description': 'q' * 50,
         })
 
-        course = Course.objects.create(**{
+        Course.objects.create(**{
             'id': 2,
             'teacher': teacher,
-            'title': cls.course_title_w,
+            'title': 'w' * 50,
             'price': 50.0,
-            'discount': None,
-            'count_lectures': 50,
-            'count_independents': 50,
-            'duration': 50,
-            'learning_format': LearningFormat.REMOTE,
-            'category': first_category,
-            'preview': 'temporary_img',
-            'short_description': 'q' * 50,
-        })
-
-        Course.objects.create(**{
-            'id': 3,
-            'teacher': teacher,
-            'title': cls.course_title_q,
-            'price': 500.0,
-            'discount': None,
-            'count_lectures': 50,
-            'count_independents': 50,
-            'duration': 50,
-            'learning_format': LearningFormat.REMOTE,
-            'category': first_category,
-            'preview': 'temporary_img',
-            'short_description': 'q' * 50,
-        })
-
-        Course.objects.create(**{
-            'id': 4,
-            'teacher': teacher,
-            'title': cls.course_title_w,
-            'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -115,18 +80,13 @@ class CourseTypeTestCase(TestCase):
         })
 
         cls.course_body = CourseBody.objects.create(**{
-            'course': course_with_body,
-            'body': 'q' * 64,
-        })
-
-        UserCourse.objects.create(**{
-            'course': course_with_body,
-            'user': first_user,
+            'course': course,
+            'body': 'q' * 25,
         })
 
         UserCourse.objects.create(**{
             'course': course,
-            'user': first_user,
+            'user': cls.user,
         })
 
         cls.discount_end_date = timezone.now() + timedelta(days=5)
@@ -145,36 +105,35 @@ class CourseTypeTestCase(TestCase):
                 cls.discount_end_date,
             ))
 
-        #   'Q291cnNlVHlwZTox' - 'CourseType:1'
-        #   'Q291cnNlVHlwZToy' - 'CourseType:2'
-        #   'Q291cnNlVHlwZToz' - 'CourseType:3'
-        cls.course_id_with_access_and_body = 'Q291cnNlVHlwZTox'
-        cls.course_id_with_access_and_with_out_body = 'Q291cnNlVHlwZToy'
-        cls.course_id_with_out_access = 'Q291cnNlVHlwZToz'
-
         context = Context()
         context.build_absolute_uri = lambda x: 'build_absolute_uri'
-        context.user = AnonymousUser()
-        cls.context_with_anonymous_user = context
-
-        context_copy = copy.deepcopy(context)
-        context_copy.user = first_user
-        cls.context_with_user_and_access = context_copy
-
-        context_copy = copy.deepcopy(context)
-        context_copy.user = second_user
-        cls.context_with_user_but_without_access = context_copy
+        context.loaders = Loaders()
+        cls.context = context
 
     def setUp(self):
         schema = Schema(query=CourseQuery)
         self.gql_client = Client(schema=schema)
 
+    def test_Should_IncludeDefiniteDjangoModel(self):
+        expected_model = self.model
+        real_model = self.tested_class._meta.model
+
+        self.assertEqual(expected_model, real_model)
+
+    def test_Should_IncludeDefiniteInterfaces(self):
+        expected_interfaces = [
+            relay.Node,
+        ]
+        real_interfaces = list(self.tested_class._meta.interfaces)
+
+        self.assertEqual(expected_interfaces, real_interfaces)
+
     def test_Should_IncludeRequiredFieldsFromModel(self):
         expected_fields = [
-            'id', 'teacher', 'title', 'price', 'count_lectures',
-            'count_independents', 'duration', 'category', 'preview',
-            'short_description', 'created_at', 'statistic', 'learning_format',
-            'body', 'progress', 'discount',
+            'id', 'teacher', 'category', 'title', 'price', 'count_lectures',
+            'count_independents', 'count_listeners', 'duration', 'preview',
+            'short_description', 'avg_rating', 'created_at', 'discount',
+            'body', 'progress', 'learning_format',
         ]
         real_fields = list(self.tested_class._meta.fields)
 
@@ -182,10 +141,12 @@ class CourseTypeTestCase(TestCase):
 
     def test_Should_SpecificTypeForEachField(self):
         expected_fields = {
-            'body': String,
+            'teacher': TeacherType,
+            'category': CategoryType,
             'discount': DiscountType,
             'learning_format': String,
             'progress': Float,
+            'body': String,
         }
         real_fields = {
             key: value.type
@@ -195,91 +156,17 @@ class CourseTypeTestCase(TestCase):
         all_fields_is_nonnull = all([
             real_fields.pop(field).__class__ == NonNull for field in [
                 'id', 'created_at', 'count_independents', 'count_lectures',
-                'duration', 'preview', 'price', 'short_description', 'title',
+                'count_listeners', 'duration', 'preview', 'price',
+                'short_description', 'title', 'avg_rating',
             ]
         ])
 
-        all_fields_is_function = [
-            callable(real_fields.pop(field)) for field in [
-                'category', 'statistic', 'teacher',
-            ]
-        ]
-
         self.assertEqual(expected_fields, real_fields)
         self.assertTrue(all_fields_is_nonnull)
-        self.assertTrue(all_fields_is_function)
-
-    def test_When_SendQueryWithNotEmptyCourseBody_Should_ReturnCourseAndBody(
-            self):
-        response = self.gql_client.execute(
-            """
-            query GetCourse ($id: ID!) {
-                course (id: $id) {
-                    id
-                    body
-                    discount {
-                        percent
-                    }
-                }
-            }
-            """,
-            variables={
-                'id': self.course_id_with_access_and_body,
-            },
-            context=self.context_with_user_and_access,
-        )
-
-        expected_response = {
-            'data': {
-                'course': {
-                    'id': self.course_id_with_access_and_body,
-                    'body': self.course_body.body,
-                    'discount': {
-                        'percent': 5,
-                    },
-                },
-            },
-        }
-        real_response = response
-
-        self.assertEqual(expected_response, real_response)
-
-    def test_When_SendQueryWithEmptyCourseBody_Should_ReturnCourseAndEmptyBody(
-            self):
-        response = self.gql_client.execute(
-            """
-            query GetCourse ($id: ID!) {
-                course (id: $id) {
-                    id
-                    body
-                    discount {
-                        percent
-                    }
-                }
-            }
-            """,
-            variables={
-                'id': self.course_id_with_access_and_with_out_body,
-            },
-            context=self.context_with_user_and_access,
-        )
-
-        expected_response = {
-            'data': {
-                'course': {
-                    'id': self.course_id_with_access_and_with_out_body,
-                    'body': None,
-                    'discount': None,
-                },
-            },
-        }
-        real_response = response
-
-        self.assertEqual(expected_response, real_response)
 
     def test_When_SendQueryWithHumanReadableLearningFormat_Should_ReturnData(
             self):
-        response = self.gql_client.execute(
+        response = self.query(
             """
             query GetCourse ($id: ID!) {
                 course (id: $id) {
@@ -289,26 +176,25 @@ class CourseTypeTestCase(TestCase):
             }
             """,
             variables={
-                'id': self.course_id_with_out_access,
+                'id': 'Q291cnNlVHlwZTox',
             },
-            context=self.context_with_user_and_access,
         )
 
         expected_response = {
             'data': {
                 'course': {
-                    'id': self.course_id_with_out_access,
+                    'id': 'Q291cnNlVHlwZTox',
                     'learningFormat': 'Дистанционно',
                 },
             },
         }
-        real_response = response
+        real_response = json.loads(response.content)
 
         self.assertEqual(expected_response, real_response)
 
     def test_When_SendQueryWithAnonymousUser_Should_ReturnProgressIsNone(
             self):
-        response = self.gql_client.execute(
+        response = self.query(
             """
             query GetCourse ($id: ID!) {
                 course (id: $id) {
@@ -318,15 +204,14 @@ class CourseTypeTestCase(TestCase):
             }
             """,
             variables={
-                'id': self.course_id_with_access_and_body,
+                'id': 'Q291cnNlVHlwZTox',
             },
-            context=self.context_with_anonymous_user,
         )
 
         expected_response = {
             'data': {
                 'course': {
-                    'id': self.course_id_with_access_and_body,
+                    'id': 'Q291cnNlVHlwZTox',
                     'progress': None,
                 },
             },
@@ -340,71 +225,7 @@ class CourseTypeTestCase(TestCase):
                 },
             ],
         }
-        real_response = response
-
-        self.assertEqual(expected_response, real_response)
-
-    def test_When_SendQueryWithUserButWithOutAccess_Should_ReturnProgress(
-            self):
-        response = self.gql_client.execute(
-            """
-            query GetCourse ($id: ID!) {
-                course (id: $id) {
-                    id
-                    progress
-                }
-            }
-            """,
-            variables={
-                'id': self.course_id_with_access_and_body,
-            },
-            context=self.context_with_user_but_without_access,
-        )
-
-        expected_response = {
-            'data': {
-                'course': {
-                    'id': self.course_id_with_access_and_body,
-                    'progress': None,
-                },
-            },
-            'errors': [
-                {
-                    'locations': [{'column': 21, 'line': 5, }, ],
-                    'message': 'You don`t have access on this course.',
-                    'path': ['course', 'progress', ],
-                },
-            ],
-        }
-        real_response = response
-
-        self.assertEqual(expected_response, real_response)
-
-    def test_When_SendQueryWithUserAndAccess_Should_ReturnProgress(self):
-        response = self.gql_client.execute(
-            """
-            query GetCourse ($id: ID!) {
-                course (id: $id) {
-                    id
-                    progress
-                }
-            }
-            """,
-            variables={
-                'id': self.course_id_with_access_and_body,
-            },
-            context=self.context_with_user_and_access,
-        )
-
-        expected_response = {
-            'data': {
-                'course': {
-                    'id': self.course_id_with_access_and_body,
-                    'progress': 0.0,
-                },
-            },
-        }
-        real_response = response
+        real_response = json.loads(response.content)
 
         self.assertEqual(expected_response, real_response)
 
@@ -418,9 +239,9 @@ class CourseTypeTestCase(TestCase):
             }
             """,
             variables={
-                'id': self.course_id_with_access_and_body,
+                'id': 'Q291cnNlVHlwZTox',
             },
-            context=self.context_with_user_and_access,
+            context=self.context,
         )
 
         expected_url = {
@@ -463,23 +284,11 @@ class CourseTypeTestCase(TestCase):
                                 'id': 'Q291cnNlVHlwZToy',
                             },
                         },
-                        {
-                            'node': {
-                                'id': 'Q291cnNlVHlwZToz',
-                            },
-                        },
-                        {
-                            'node': {
-                                'id': 'Q291cnNlVHlwZTo0',
-                            },
-                        },
                     ],
                 },
             },
         }
         real_response = response
-
-        self.maxDiff = None
 
         self.assertEqual(expected_response, real_response)
 
@@ -510,11 +319,6 @@ class CourseTypeTestCase(TestCase):
             'data': {
                 'allCourses': {
                     'edges': [
-                        {
-                            'node': {
-                                'id': 'Q291cnNlVHlwZToz',
-                            },
-                        },
                         {
                             'node': {
                                 'id': 'Q291cnNlVHlwZTox',
@@ -550,16 +354,6 @@ class CourseTypeTestCase(TestCase):
                     'edges': [
                         {
                             'node': {
-                                'id': 'Q291cnNlVHlwZTo0',
-                            },
-                        },
-                        {
-                            'node': {
-                                'id': 'Q291cnNlVHlwZToz',
-                            },
-                        },
-                        {
-                            'node': {
                                 'id': 'Q291cnNlVHlwZToy',
                             },
                         },
@@ -573,5 +367,77 @@ class CourseTypeTestCase(TestCase):
             },
         }
         real_response = response
+
+        self.assertEqual(expected_response, real_response)
+
+    def test_When_CallRelatedData_Should_UseLoadersWithOutErrors(self):
+        access_token = RefreshToken.for_user(self.user).access_token
+        header = (
+            f'{settings.SIMPLE_JWT.get("AUTH_HEADER_TYPES")[0]} {access_token}'
+        )
+
+        response = self.query(
+            """
+            query {
+                allCourses {
+                    edges {
+                        node {
+                            id
+                            teacher {
+                                id
+                            }
+                            category {
+                                id
+                            }
+                            body
+                            discount {
+                                percent
+                                endDate
+                            }
+                            progress
+                        }
+                    }
+                }
+            }
+            """,
+            headers={
+                'HTTP_AUTHORIZATION': header,
+            },
+        )
+
+        expected_response = {
+            'data': {
+                'allCourses': {
+                    'edges': [
+                        {
+                            'node': {
+                                'id': 'Q291cnNlVHlwZTox',
+                                'teacher': {'id': 'VGVhY2hlclR5cGU6MQ==', },
+                                'category': {'id': 'Q2F0ZWdvcnlUeXBlOjE=', },
+                                'body': 'q' * 25,
+                                'discount': {
+                                    'percent': 5,
+                                    'endDate': str(
+                                        self.discount_end_date.date()
+                                    ),
+                                },
+                                'progress': 0.0,
+                            },
+                        },
+                        {
+                            'node': {
+                                'id': 'Q291cnNlVHlwZToy',
+                                'teacher': {'id': 'VGVhY2hlclR5cGU6MQ==', },
+                                'category': {'id': 'Q2F0ZWdvcnlUeXBlOjI=', },
+                                'body': None,
+                                'discount': None,
+                                'progress': None,
+                            },
+                        },
+                    ],
+                },
+            },
+        }
+        real_response = json.loads(response.content)
 
         self.assertEqual(expected_response, real_response)

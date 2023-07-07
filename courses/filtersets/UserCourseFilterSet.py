@@ -17,7 +17,6 @@ class UserCourseFilterSet(FilterSet):
         }
 
         if value not in field_values.keys():
-            detail = 'Not valid choices for orderBy.'
-            raise GraphQLError(detail)
+            raise GraphQLError('Not valid choices for orderBy.')
 
         return queryset.order_by(field_values[value])

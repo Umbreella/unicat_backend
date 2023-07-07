@@ -7,7 +7,7 @@ from ...models.Event import Event
 
 
 class EventModelTest(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -52,8 +52,32 @@ class EventModelTest(TestCase):
             field.name: field.__class__
             for field in self.tested_class._meta.get_fields()
         }
-        self.maxDiff = None
+
         self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_HelpTextForEachField(self):
+        expected_help_text = {
+            'id': '',
+            'title': 'Event name.',
+            'preview': 'Event image.',
+            'description': 'Full description of the event.',
+            'short_description': (
+                'A brief description of the event displayed on the icon.'
+            ),
+            'date': 'Event date.',
+            'start_time': 'Event start time.',
+            'end_time': 'Event end time.',
+            'place': 'Venue of the event.',
+            'created_at': 'Event creation time.',
+        }
+        real_help_text = {
+            field.name: (
+                field.help_text if hasattr(field, 'help_text') else ''
+            )
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_help_text, real_help_text)
 
     def test_When_CreateCourseWithOutData_Should_ErrorBlankField(self):
         event = self.tested_class()

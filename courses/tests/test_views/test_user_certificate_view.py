@@ -17,7 +17,7 @@ from ...views.UserCertificateView import UserCertificateView
 
 
 class UserCertificateViewTestCase(APITestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -32,6 +32,12 @@ class UserCertificateViewTestCase(APITestCase):
             'viewname': 'user_certificate',
             'kwargs': {
                 'course_id': 'Q291cnNlVHlwZToy',
+            },
+        })
+        cls.url_not_valid = reverse(**{
+            'viewname': 'user_certificate',
+            'kwargs': {
+                'course_id': 'Q2F0ZWdvcnlUeXBlOjE=',
             },
         })
 
@@ -53,7 +59,6 @@ class UserCertificateViewTestCase(APITestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -67,7 +72,6 @@ class UserCertificateViewTestCase(APITestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -151,17 +155,22 @@ class UserCertificateViewTestCase(APITestCase):
 
         self.assertEqual(expected_status, real_status)
 
-    def test_When_GetMethodForCreatedCertificate_Should_ReturnFile(self):
-        response = self.logged_client.get(self.url_on_first_course)
+    def test_When_GetMethodForEmptyCertificate_Should_ErrorCourseIdNotValid(
+            self):
+        response = self.logged_client.get(self.url_not_valid)
 
-        expected_status = status.HTTP_200_OK
+        expected_status = status.HTTP_400_BAD_REQUEST
         real_status = response.status_code
 
-        expected_content_type = 'application/pdf'
-        real_content_type = response.headers.get('Content-Type')
+        expected_data = {
+            'course_id': [
+                'Not valid value.',
+            ],
+        }
+        real_data = response.data
 
         self.assertEqual(expected_status, real_status)
-        self.assertEqual(expected_content_type, real_content_type)
+        self.assertEqual(expected_data, real_data)
 
     def test_When_GetMethodForEmptyCertificate_Should_ErrorNotHaveCertificate(
             self):
@@ -179,3 +188,15 @@ class UserCertificateViewTestCase(APITestCase):
 
         self.assertEqual(expected_status, real_status)
         self.assertEqual(expected_data, real_data)
+
+    def test_When_GetMethodForCreatedCertificate_Should_ReturnFile(self):
+        response = self.logged_client.get(self.url_on_first_course)
+
+        expected_status = status.HTTP_200_OK
+        real_status = response.status_code
+
+        expected_content_type = 'application/pdf'
+        real_content_type = response.headers.get('Content-Type')
+
+        self.assertEqual(expected_status, real_status)
+        self.assertEqual(expected_content_type, real_content_type)

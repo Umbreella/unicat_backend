@@ -1,6 +1,7 @@
 from django.test import TestCase
-from graphene import NonNull, Schema
+from graphene import NonNull, Schema, relay
 from graphene.test import Client
+from graphene.utils.subclass_with_meta import SubclassWithMeta_Meta
 
 from users.models import User
 from users.models.Teacher import Teacher
@@ -13,7 +14,7 @@ from ...schema.CourseStatType import CourseStatQuery, CourseStatType
 
 
 class CourseStatTypeTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -39,7 +40,6 @@ class CourseStatTypeTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -54,7 +54,6 @@ class CourseStatTypeTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -68,11 +67,25 @@ class CourseStatTypeTestCase(TestCase):
         schema = Schema(query=CourseStatQuery)
         self.gql_client = Client(schema=schema)
 
+    def test_Should_IncludeDefiniteDjangoModel(self):
+        expected_model = self.model
+        real_model = self.tested_class._meta.model
+
+        self.assertEqual(expected_model, real_model)
+
+    def test_Should_IncludeDefiniteInterfaces(self):
+        expected_interfaces = [
+            relay.Node,
+        ]
+        real_interfaces = list(self.tested_class._meta.interfaces)
+
+        self.assertEqual(expected_interfaces, real_interfaces)
+
     def test_Should_IncludeAllFieldsFromModel(self):
         expected_fields = (
-            'id', 'avg_rating', 'count_comments', 'count_five_rating',
+            'id', 'count_comments', 'count_five_rating',
             'count_four_rating', 'count_three_rating', 'count_two_rating',
-            'count_one_rating',
+            'count_one_rating', 'avg_rating',
         )
         real_fields = tuple(self.tested_class._meta.fields)
 
@@ -81,7 +94,7 @@ class CourseStatTypeTestCase(TestCase):
     def test_Should_SpecificTypeForEachField(self):
         expected_fields = {
             'id': NonNull,
-            'avg_rating': NonNull,
+            'avg_rating': SubclassWithMeta_Meta,
             'count_comments': NonNull,
             'count_five_rating': NonNull,
             'count_four_rating': NonNull,
@@ -115,7 +128,7 @@ class CourseStatTypeTestCase(TestCase):
             'errors': [
                 {
                     'locations': [{'column': 17, 'line': 3}],
-                    'message': 'This is not global Id.',
+                    'message': 'courseId: not valid value.',
                     'path': ['statistic'],
                 },
             ],
@@ -140,6 +153,13 @@ class CourseStatTypeTestCase(TestCase):
             'data': {
                 'statistic': None,
             },
+            'errors': [
+                {
+                    'locations': [{'column': 17, 'line': 3, }, ],
+                    'message': 'CourseId is Not Found.',
+                    'path': ['statistic', ],
+                },
+            ],
         }
         real_data = response
 
@@ -151,6 +171,7 @@ class CourseStatTypeTestCase(TestCase):
             query {
                 statistic (courseId: "Q291cnNlVHlwZTox") {
                     id
+                    avgRating
                 }
             }
             """,
@@ -160,6 +181,7 @@ class CourseStatTypeTestCase(TestCase):
             'data': {
                 'statistic': {
                     'id': 'Q291cnNlU3RhdFR5cGU6MQ==',
+                    'avgRating': '0.0',
                 },
             },
         }

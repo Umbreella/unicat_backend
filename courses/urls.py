@@ -72,6 +72,6 @@ urlpatterns = [
         'name': 'single_learning_formats',
     }),
 
-    re_path(r'^(?P<course_id>[\w=]*)/certificate$',
+    re_path(r'(?P<course_id>[\w=]*)/certificate/',
             UserCertificateView.as_view(), name='user_certificate'),
 ]

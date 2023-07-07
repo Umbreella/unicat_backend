@@ -2,8 +2,7 @@ import graphene
 from graphene import relay
 from graphene_django import DjangoObjectType
 from graphql_jwt.decorators import login_required
-
-from unicat.graphql.functions import get_value_from_model_id
+from graphql_relay import to_global_id
 
 from ..models.UserCourse import UserCourse
 
@@ -16,15 +15,15 @@ class UserCertificateType(DjangoObjectType):
     class Meta:
         model = UserCourse
         interfaces = (relay.Node,)
-        fields = ('id',)
+        fields = (
+            'id', 'course',
+        )
 
     def resolve_course(self, info):
-        global_course_id = get_value_from_model_id('CourseType',
-                                                   self.course_id)
-        return global_course_id
+        return to_global_id('CourseType', self.course_id)
 
     def resolve_title(self, info):
-        return str(self.course)
+        return info.context.loaders.certificate_loader.load(self.course_id)
 
     def resolve_created_at(self, info):
         return self.completed_at.strftime('%d.%m.%Y')

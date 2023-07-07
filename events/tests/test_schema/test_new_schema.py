@@ -1,7 +1,9 @@
-from django.test import TestCase
+import json
+
 from django.utils import timezone
-from graphene import NonNull, Schema, String
+from graphene import NonNull, Schema, String, relay
 from graphene.test import Client
+from graphene_django.utils import GraphQLTestCase
 
 from users.models import User
 
@@ -9,8 +11,8 @@ from ...models.New import New
 from ...schema.NewType import NewsQuery, NewType
 
 
-class NewTypeTestCase(TestCase):
-    databases = {'master'}
+class NewTypeTestCase(GraphQLTestCase):
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -47,12 +49,26 @@ class NewTypeTestCase(TestCase):
 
     def setUp(self):
         schema = Schema(query=NewsQuery)
-
         self.gql_client = Client(schema=schema)
+
+    def test_Should_IncludeDefiniteDjangoModel(self):
+        expected_model = self.model
+        real_model = self.tested_class._meta.model
+
+        self.assertEqual(expected_model, real_model)
+
+    def test_Should_IncludeDefiniteInterfaces(self):
+        expected_interfaces = [
+            relay.Node,
+        ]
+        real_interfaces = list(self.tested_class._meta.interfaces)
+
+        self.assertEqual(expected_interfaces, real_interfaces)
 
     def test_Should_IncludeAllFieldsFromModel(self):
         expected_fields = [
-            field.name for field in self.model._meta.fields
+            'id', 'preview', 'title', 'short_description', 'description',
+            'author', 'created_at',
         ]
         real_fields = list(self.tested_class._meta.fields)
 
@@ -84,7 +100,6 @@ class NewTypeTestCase(TestCase):
                 news (id: $newsId) {
                     id
                     createdAt
-                    author
                 }
             }
             """,
@@ -100,7 +115,6 @@ class NewTypeTestCase(TestCase):
                 'news': {
                     'id': self.new_id,
                     'createdAt': created_at,
-                    'author': str(self.user),
                 }
             }
         }
@@ -130,13 +144,14 @@ class NewTypeTestCase(TestCase):
         self.assertEqual(expected_url, real_url)
 
     def test_When_SendQueryListNews_Should_ReturnListNews(self):
-        response = self.gql_client.execute(
+        response = self.query(
             """
             query {
                 allNews {
                     edges {
                         node {
                             id
+                            author
                         }
                     }
                 }
@@ -151,17 +166,20 @@ class NewTypeTestCase(TestCase):
                         {
                             'node': {
                                 'id': 'TmV3VHlwZToy',
+                                'author': str(self.user),
                             },
                         },
                         {
                             'node': {
                                 'id': 'TmV3VHlwZTox',
+                                'author': str(self.user),
                             },
                         },
                     ],
                 },
             },
         }
-        real_response = response
+        real_response = json.loads(response.content)
 
+        self.assertResponseNoErrors(response)
         self.assertEqual(expected_response, real_response)

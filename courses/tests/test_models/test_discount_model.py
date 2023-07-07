@@ -19,7 +19,7 @@ from ...models.LearningFormat import LearningFormat
 
 
 class DiscountModelTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -46,7 +46,6 @@ class DiscountModelTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -113,6 +112,23 @@ class DiscountModelTestCase(TestCase):
         }
 
         self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_HelpTextForEachField(self):
+        expected_help_text = {
+            'id': '',
+            'course': 'The course for which the discount was created.',
+            'percent': 'Discount percentage, from 0 to 100.',
+            'end_date': 'Discount end date.',
+            'start_date': 'Discount start date.',
+        }
+        real_help_text = {
+            field.name: (
+                field.help_text if hasattr(field, 'help_text') else ''
+            )
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_help_text, real_help_text)
 
     def test_When_CreateDiscountWithOutData_Should_ErrorNullField(self):
         discount = self.tested_class()

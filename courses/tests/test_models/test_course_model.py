@@ -17,7 +17,7 @@ from ...models.LearningFormat import LearningFormat
 
 
 class CourseModelTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -28,7 +28,7 @@ class CourseModelTestCase(TestCase):
             'password': 'q' * 50,
         })
 
-        teacher = Teacher.objects.create(**{
+        cls.teacher = Teacher.objects.create(**{
             'user': user,
             'description': 'q' * 50,
         })
@@ -38,10 +38,9 @@ class CourseModelTestCase(TestCase):
         })
 
         cls.data = {
-            'teacher': teacher,
+            'teacher': cls.teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -56,10 +55,10 @@ class CourseModelTestCase(TestCase):
     def test_Should_IncludeRequiredFields(self):
         expected_fields = [
             'course_body', 'statistic', 'discounts', 'user_courses', 'lessons',
-            'payments', 'id', 'teacher', 'title', 'price', 'discount',
-            'count_lectures', 'count_independents', 'duration',
-            'learning_format', 'category', 'preview', 'short_description',
-            'created_at', 'listeners',
+            'payments', 'id', 'teacher', 'category', 'title', 'price',
+            'count_lectures', 'count_independents', 'count_listeners',
+            'duration', 'learning_format', 'preview', 'short_description',
+            'avg_rating', 'created_at', 'listeners',
         ]
         real_fields = [
             field.name for field in self.tested_class._meta.get_fields()
@@ -79,9 +78,10 @@ class CourseModelTestCase(TestCase):
             'teacher': ForeignKey,
             'title': CharField,
             'price': DecimalField,
-            'discount': DecimalField,
+            'avg_rating': DecimalField,
             'count_lectures': PositiveSmallIntegerField,
             'count_independents': PositiveSmallIntegerField,
+            'count_listeners': PositiveSmallIntegerField,
             'duration': PositiveIntegerField,
             'learning_format': IntegerField,
             'category': ForeignKey,
@@ -96,6 +96,49 @@ class CourseModelTestCase(TestCase):
         }
 
         self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_HelpTextForEachField(self):
+        expected_help_text = {
+            'id': '',
+            'category': 'Course category.',
+            'teacher': 'The teacher who leads the course.',
+            'title': 'Course name.',
+            'price': 'Course price.',
+            'preview': 'Course picture.',
+            'short_description': (
+                'A few words about the course, shown on the course icon.'
+            ),
+            'avg_rating': (
+                'Average rating based on comments, calculated automatically.'
+            ),
+            'count_independents': (
+                'Count independents in course, calculated automatically.'
+            ),
+            'count_lectures': (
+                'Count lectures in course, calculated automatically.'
+            ),
+            'count_listeners': (
+                'Count listeners in course, calculated automatically.'
+            ),
+            'created_at': 'Course creation time.',
+            'listeners': 'All students of the course.',
+            'course_body': '',
+            'discounts': '',
+            'duration': '',
+            'learning_format': '',
+            'lessons': '',
+            'payments': '',
+            'statistic': '',
+            'user_courses': '',
+        }
+        real_help_text = {
+            field.name: (
+                field.help_text if hasattr(field, 'help_text') else ''
+            )
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_help_text, real_help_text)
 
     def test_When_CreateCourseWithOutData_Should_ErrorBlankField(self):
         course = self.tested_class()
@@ -155,7 +198,6 @@ class CourseModelTestCase(TestCase):
         data = self.data
         data.update({
             'price': f'{"1" * 7}.0',
-            'discount': f'{"1" * 7}.0',
         })
 
         course = self.tested_class(**data)
@@ -165,9 +207,6 @@ class CourseModelTestCase(TestCase):
 
         expected_raise = {
             'price': [
-                'Ensure that there are no more than 7 digits in total.',
-            ],
-            'discount': [
                 'Ensure that there are no more than 7 digits in total.',
             ],
         }
@@ -180,7 +219,6 @@ class CourseModelTestCase(TestCase):
         data = self.data
         data.update({
             'price': f'0.{"1" * 3}',
-            'discount': f'0.{"1" * 3}',
         })
 
         course = self.tested_class(**data)
@@ -190,9 +228,6 @@ class CourseModelTestCase(TestCase):
 
         expected_raise = {
             'price': [
-                'Ensure that there are no more than 2 decimal places.',
-            ],
-            'discount': [
                 'Ensure that there are no more than 2 decimal places.',
             ],
         }
@@ -244,6 +279,23 @@ class CourseModelTestCase(TestCase):
         real_str = str(course)
 
         self.assertEqual(expected_str, real_str)
+
+    def test_When_SaveCourse_Should_CreateUpdateTeacherCeleryTask(self):
+        data = self.data
+
+        course = self.tested_class(**data)
+        course.save()
+
+        course_stat = course.statistic
+        course_stat.count_five_rating = 1
+        course_stat.save()
+
+        self.teacher.refresh_from_db()
+
+        expected_average_rating = 5
+        real_average_rating = self.teacher.avg_rating
+
+        self.assertEqual(expected_average_rating, real_average_rating)
 
     def test_When_SaveCourse_Should_SetCreatedAtOnNow(self):
         data = self.data

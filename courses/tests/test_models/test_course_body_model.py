@@ -12,7 +12,7 @@ from ...models.LearningFormat import LearningFormat
 
 
 class CourseBodyModelTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -36,7 +36,6 @@ class CourseBodyModelTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -73,6 +72,19 @@ class CourseBodyModelTestCase(TestCase):
         }
 
         self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_HelpTextForEachField(self):
+        expected_help_text = {
+            'id': '',
+            'course': 'The course for which you need to create its content.',
+            'body': 'Course content displayed on the Description tab.',
+        }
+        real_help_text = {
+            field.name: field.help_text
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_help_text, real_help_text)
 
     def test_When_CreateCourseBodyWithOutData_Should_ErrorBlankField(self):
         course_body = self.tested_class()

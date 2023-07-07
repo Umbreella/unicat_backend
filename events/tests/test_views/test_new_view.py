@@ -5,10 +5,10 @@ from itertools import islice
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.filters import OrderingFilter, SearchFilter
-from rest_framework.permissions import IsAdminUser
 from rest_framework.test import APITestCase
 from rest_framework.viewsets import ModelViewSet
 
+from unicat.permissions.DjModelPermForDRF import DjModelPermForDRF
 from users.models import User
 
 from ...models.New import New
@@ -18,7 +18,7 @@ from ...views.NewView import NewView
 
 
 class NewViewTestCase(APITestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -78,7 +78,7 @@ class NewViewTestCase(APITestCase):
 
     def test_Should_PermissionClassesIsAdminUser(self):
         expected_permission_classes = (
-            IsAdminUser,
+            DjModelPermForDRF,
         )
         real_permission_classes = self.tested_class.permission_classes
 
@@ -116,14 +116,12 @@ class NewViewTestCase(APITestCase):
 
     def test_Should_DontOverrideSuperMethods(self):
         expected_methods = [
-            ModelViewSet.create,
             ModelViewSet.destroy,
             ModelViewSet.retrieve,
             ModelViewSet.update,
             ModelViewSet.partial_update,
         ]
         real_methods = [
-            self.tested_class.create,
             self.tested_class.destroy,
             self.tested_class.retrieve,
             self.tested_class.update,
@@ -132,15 +130,17 @@ class NewViewTestCase(APITestCase):
 
         self.assertEqual(expected_methods, real_methods)
 
-    def test_Should_OverrideSuperMethods(self):
-        expected_methods = [
-            ModelViewSet.list,
-        ]
-        real_methods = [
-            self.tested_class.list,
-        ]
+    def test_Should_OverrideSuperMethodCreate(self):
+        expected_method = ModelViewSet.create
+        real_method = self.tested_class.create
 
-        self.assertNotEqual(expected_methods, real_methods)
+        self.assertNotEqual(expected_method, real_method)
+
+    def test_Should_OverrideSuperMethodList(self):
+        expected_method = ModelViewSet.list
+        real_method = self.tested_class.list
+
+        self.assertNotEqual(expected_method, real_method)
 
     def test_When_PutMethodForListNews_Should_ErrorWithStatus405(self):
         response = self.logged_client.put(self.url_for_list)

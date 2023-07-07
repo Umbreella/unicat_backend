@@ -6,7 +6,7 @@ from ...models.Category import Category
 
 
 class CategoryFilterSetTest(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

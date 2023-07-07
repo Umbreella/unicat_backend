@@ -1,6 +1,7 @@
 from rest_framework.filters import OrderingFilter, SearchFilter
-from rest_framework.permissions import IsAdminUser
 from rest_framework.viewsets import ModelViewSet
+
+from unicat.permissions.DjModelPermForDRF import DjModelPermForDRF
 
 from ..models.Course import Course
 from ..serializers.CourseSerializer import CourseSerializer
@@ -9,7 +10,7 @@ from ..serializers.ListCourseSerializer import ListCourseSerializer
 
 class CourseView(ModelViewSet):
     queryset = Course.objects.prefetch_related('course_body').all()
-    permission_classes = (IsAdminUser,)
+    permission_classes = (DjModelPermForDRF,)
     serializer_class = CourseSerializer
     filter_backends = (SearchFilter, OrderingFilter,)
     search_fields = ('title',)

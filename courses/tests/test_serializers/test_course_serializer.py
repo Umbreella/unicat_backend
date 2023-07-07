@@ -12,7 +12,7 @@ from ...serializers.CourseSerializer import CourseSerializer
 
 
 class CourseSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -50,7 +50,6 @@ class CourseSerializerTestCase(TestCase):
             'teacher': 1,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -92,17 +91,17 @@ class CourseSerializerTestCase(TestCase):
 
         self.assertEqual(expected_methods, real_methods)
 
-    def test_Should_OverrideSuperMethods(self):
-        expected_methods = [
-            ModelSerializer.create,
-            ModelSerializer.update,
-        ]
-        real_methods = [
-            self.tested_class.create,
-            self.tested_class.update,
-        ]
+    def test_Should_OverrideSuperMethodCreate(self):
+        expected_method = ModelSerializer.create
+        real_method = self.tested_class.create
 
-        self.assertNotEqual(expected_methods, real_methods)
+        self.assertNotEqual(expected_method, real_method)
+
+    def test_Should_OverrideSuperMethodUpdate(self):
+        expected_method = ModelSerializer.update
+        real_method = self.tested_class.update
+
+        self.assertNotEqual(expected_method, real_method)
 
     def test_When_DataWithOutBody_Should_ErrorWithRequiredField(self):
         data = self.data

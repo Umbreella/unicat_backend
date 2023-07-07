@@ -1,5 +1,5 @@
 from django.test import TestCase
-from graphene import NonNull, Schema
+from graphene import NonNull, Schema, relay
 from graphene.test import Client
 
 from ...models.Category import Category
@@ -7,7 +7,7 @@ from ...schema.CategoryType import CategoryQuery, CategoryType
 
 
 class CategoryTypeTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -33,8 +33,24 @@ class CategoryTypeTestCase(TestCase):
         schema = Schema(query=CategoryQuery)
         self.gql_client = Client(schema=schema)
 
+    def test_Should_IncludeDefiniteDjangoModel(self):
+        expected_model = self.model
+        real_model = self.tested_class._meta.model
+
+        self.assertEqual(expected_model, real_model)
+
+    def test_Should_IncludeDefiniteInterfaces(self):
+        expected_interfaces = [
+            relay.Node,
+        ]
+        real_interfaces = list(self.tested_class._meta.interfaces)
+
+        self.assertEqual(expected_interfaces, real_interfaces)
+
     def test_Should_IncludeAllFieldsFromModel(self):
-        expected_fields = [field.name for field in self.model._meta.fields]
+        expected_fields = [
+            'id', 'title',
+        ]
         real_fields = list(self.tested_class._meta.fields)
 
         self.assertEqual(expected_fields, real_fields)

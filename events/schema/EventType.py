@@ -10,8 +10,11 @@ class EventType(DjangoObjectType):
 
     class Meta:
         model = Event
-        interfaces = (relay.Node, )
-        fields = '__all__'
+        interfaces = (relay.Node,)
+        fields = (
+            'id', 'preview', 'title', 'short_description', 'description',
+            'date', 'start_time', 'end_time', 'place', 'created_at',
+        )
 
     def resolve_preview(self, info):
         return info.context.build_absolute_uri(self.preview.url)
@@ -30,4 +33,4 @@ class EventQuery(graphene.ObjectType):
     all_events = relay.ConnectionField(EventsConnection)
 
     def resolve_all_events(root, info, **kwargs):
-        return Event.objects.all().order_by('-created_at')
+        return Event.objects.all().order_by('-date', '-created_at')

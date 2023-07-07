@@ -5,7 +5,7 @@ from ...serializers.DiscountSerializer import DiscountSerializer
 
 
 class DiscountSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

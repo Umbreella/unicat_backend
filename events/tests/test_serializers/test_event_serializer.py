@@ -5,7 +5,7 @@ from ...serializers.EventSerializer import EventSerializer
 
 
 class EventSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

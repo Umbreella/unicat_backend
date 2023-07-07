@@ -1,10 +1,10 @@
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.filters import OrderingFilter, SearchFilter
-from rest_framework.permissions import IsAdminUser
 from rest_framework.test import APITestCase
 from rest_framework.viewsets import ModelViewSet
 
+from unicat.permissions.DjModelPermForDRF import DjModelPermForDRF
 from users.models import User
 from users.models.Teacher import Teacher
 
@@ -18,7 +18,7 @@ from ...views.CourseView import CourseView
 
 
 class CourseViewTestCase(APITestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -61,7 +61,6 @@ class CourseViewTestCase(APITestCase):
             'teacher': first_teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -119,7 +118,7 @@ class CourseViewTestCase(APITestCase):
 
     def test_Should_PermissionClassesIsAdminUser(self):
         expected_permission_classes = (
-            IsAdminUser,
+            DjModelPermForDRF,
         )
         real_permission_classes = self.tested_class.permission_classes
 
@@ -179,15 +178,11 @@ class CourseViewTestCase(APITestCase):
 
         self.assertEqual(expected_methods, real_methods)
 
-    def test_Should_OverrideSuperMethods(self):
-        expected_methods = [
-            ModelViewSet.list,
-        ]
-        real_methods = [
-            self.tested_class.list,
-        ]
+    def test_Should_OverrideSuperMethodList(self):
+        expected_method = ModelViewSet.list
+        real_method = self.tested_class.list
 
-        self.assertNotEqual(expected_methods, real_methods)
+        self.assertNotEqual(expected_method, real_method)
 
     def test_When_PutMethodForListCourses_Should_ErrorWithStatus405(self):
         response = self.logged_client.put(self.url_for_list)

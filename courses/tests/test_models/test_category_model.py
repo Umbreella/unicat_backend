@@ -6,7 +6,7 @@ from ...models.Category import Category
 
 
 class CategoryModelTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -38,6 +38,21 @@ class CategoryModelTestCase(TestCase):
         }
 
         self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_HelpTextForEachField(self):
+        expected_help_text = {
+            'id': '',
+            'title': 'Category name.',
+            'courses': '',
+        }
+        real_help_text = {
+            field.name: (
+                field.help_text if hasattr(field, 'help_text') else ''
+            )
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_help_text, real_help_text)
 
     def test_When_CreateCategoryWithOutTitle_Should_ErrorBlankField(self):
         category = self.tested_class()

@@ -5,7 +5,7 @@ from ...serializers.CategorySerializer import CategorySerializer
 
 
 class CategorySerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

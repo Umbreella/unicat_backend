@@ -1,6 +1,6 @@
 from django.test import TestCase
 from django.utils import timezone
-from graphene import NonNull, Schema, String
+from graphene import NonNull, Schema, String, relay
 from graphene.test import Client
 
 from ...models.Event import Event
@@ -8,7 +8,7 @@ from ...schema.EventType import EventQuery, EventType
 
 
 class EventTypeTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -44,12 +44,26 @@ class EventTypeTestCase(TestCase):
 
     def setUp(self):
         schema = Schema(query=EventQuery)
-
         self.gql_client = Client(schema=schema)
+
+    def test_Should_IncludeDefiniteDjangoModel(self):
+        expected_model = self.model
+        real_model = self.tested_class._meta.model
+
+        self.assertEqual(expected_model, real_model)
+
+    def test_Should_IncludeDefiniteInterfaces(self):
+        expected_interfaces = [
+            relay.Node,
+        ]
+        real_interfaces = list(self.tested_class._meta.interfaces)
+
+        self.assertEqual(expected_interfaces, real_interfaces)
 
     def test_Should_IncludeAllFieldsFromModel(self):
         expected_fields = [
-            field.name for field in self.model._meta.fields
+            'id', 'preview', 'title', 'short_description', 'description',
+            'date', 'start_time', 'end_time', 'place', 'created_at',
         ]
         real_fields = list(self.tested_class._meta.fields)
 

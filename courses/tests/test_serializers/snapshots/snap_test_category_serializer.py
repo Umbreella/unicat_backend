@@ -8,4 +8,4 @@ snapshots = Snapshot()
 
 snapshots['CategorySerializerTestCase::test_Should_SpecificFormatForEachField 1'] = '''CategorySerializer():
     id = IntegerField(label='ID', read_only=True)
-    title = CharField(max_length=128)'''
+    title = CharField(help_text='Category name.', max_length=128)'''

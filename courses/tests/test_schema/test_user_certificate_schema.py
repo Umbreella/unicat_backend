@@ -1,11 +1,14 @@
 import copy
+import json
 
 from django.contrib.auth.models import AnonymousUser
-from django.test import TestCase
 from django.utils import timezone
-from graphene import Context, NonNull, Schema, String
+from graphene import Context, NonNull, Schema, String, relay
 from graphene.test import Client
+from graphene_django.utils import GraphQLTestCase
+from rest_framework_simplejwt.tokens import RefreshToken
 
+from unicat.graphql.loaders import Loaders
 from users.models import User
 from users.models.Teacher import Teacher
 
@@ -17,14 +20,15 @@ from ...schema.UserCertificateType import (UserCertificateQuery,
                                            UserCertificateType)
 
 
-class UserCertificateTypeTestCase(TestCase):
-    databases = {'master'}
+class UserCertificateTypeTestCase(GraphQLTestCase):
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
         cls.tested_class = UserCertificateType
+        cls.model = UserCourse
 
-        first_user = User.objects.create_user(**{
+        cls.first_user = User.objects.create_superuser(**{
             'email': 'q' * 50 + '@q.qq',
             'password': 'q' * 50,
         })
@@ -35,7 +39,7 @@ class UserCertificateTypeTestCase(TestCase):
         })
 
         teacher = Teacher.objects.create(**{
-            'user': first_user,
+            'user': cls.first_user,
             'description': 'q' * 50,
         })
 
@@ -47,7 +51,6 @@ class UserCertificateTypeTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -59,17 +62,18 @@ class UserCertificateTypeTestCase(TestCase):
 
         UserCourse.objects.create(**{
             'course': cls.course,
-            'user': first_user,
+            'user': cls.first_user,
             'completed_at': timezone.now(),
         })
 
         context = Context()
         context.user = AnonymousUser()
         context.build_absolute_uri = lambda x: 'build_absolute_uri'
+        context.loaders = Loaders()
         cls.context_with_anonymous_user = context
 
         context_with_user = copy.deepcopy(context)
-        context_with_user.user = first_user
+        context_with_user.user = cls.first_user
         cls.context_with_access = context_with_user
 
         contest_with_out_access = copy.deepcopy(context)
@@ -81,6 +85,20 @@ class UserCertificateTypeTestCase(TestCase):
     def setUp(self):
         schema = Schema(query=UserCertificateQuery)
         self.gql_client = Client(schema=schema)
+
+    def test_Should_IncludeDefiniteDjangoModel(self):
+        expected_model = self.model
+        real_model = self.tested_class._meta.model
+
+        self.assertEqual(expected_model, real_model)
+
+    def test_Should_IncludeDefiniteInterfaces(self):
+        expected_interfaces = [
+            relay.Node,
+        ]
+        real_interfaces = list(self.tested_class._meta.interfaces)
+
+        self.assertEqual(expected_interfaces, real_interfaces)
 
     def test_Should_IncludeDefiniteFieldsFromModel(self):
         expected_fields = [
@@ -172,7 +190,8 @@ class UserCertificateTypeTestCase(TestCase):
 
     def test_When_SendQueryWithUserWithAccess_Should_ReturnCertificatesByUser(
             self):
-        response = self.gql_client.execute(
+        access_token = RefreshToken.for_user(self.first_user).access_token
+        response = self.query(
             """
             query {
                 myCertificates {
@@ -187,11 +206,12 @@ class UserCertificateTypeTestCase(TestCase):
                 }
             }
             """,
-            context=self.context_with_access,
+            headers={
+                'HTTP_AUTHORIZATION': f'Bearer {access_token}',
+            },
         )
 
-        timezone_now = timezone.now()
-        created_at = timezone_now.strftime(self.date_format)
+        created_at = timezone.now().strftime(self.date_format)
 
         expected_response = {
             'data': {
@@ -201,7 +221,7 @@ class UserCertificateTypeTestCase(TestCase):
                             'node': {
                                 'id': 'VXNlckNlcnRpZmljYXRlVHlwZTox',
                                 'course': 'Q291cnNlVHlwZTox',
-                                'title': str(self.course),
+                                'title': 'q' * 50,
                                 'createdAt': created_at,
                             },
                         },
@@ -209,6 +229,6 @@ class UserCertificateTypeTestCase(TestCase):
                 },
             },
         }
-        real_response = response
+        real_response = json.loads(response.content)
 
         self.assertEqual(expected_response, real_response)

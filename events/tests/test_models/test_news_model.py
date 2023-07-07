@@ -10,7 +10,7 @@ from ...models.New import New
 
 
 class NewsModelTest(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -58,8 +58,29 @@ class NewsModelTest(TestCase):
             field.name: field.__class__
             for field in self.tested_class._meta.get_fields()
         }
-        self.maxDiff = None
+
         self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_HelpTextForEachField(self):
+        expected_help_text = {
+            'id': '',
+            'title': 'News name.',
+            'preview': 'News image.',
+            'short_description': (
+                'A brief description of the news displayed on the icon.'
+            ),
+            'description': 'Full description of the news.',
+            'author': 'The user who created the news.',
+            'created_at': 'News creation time.',
+        }
+        real_help_text = {
+            field.name: (
+                field.help_text if hasattr(field, 'help_text') else ''
+            )
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_help_text, real_help_text)
 
     def test_When_CreateNewsWithOutData_Should_ErrorBlankField(self):
         news = self.tested_class()

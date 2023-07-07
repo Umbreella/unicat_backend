@@ -12,7 +12,13 @@ class NewType(DjangoObjectType):
     class Meta:
         model = New
         interfaces = (relay.Node,)
-        fields = '__all__'
+        fields = (
+            'id', 'preview', 'title', 'short_description', 'description',
+            'author', 'created_at',
+        )
+
+    def resolve_author(self, info):
+        return info.context.loaders.user_loader.load(self.author_id)
 
     def resolve_preview(self, info):
         return info.context.build_absolute_uri(self.preview.url)

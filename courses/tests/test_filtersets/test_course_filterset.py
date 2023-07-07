@@ -12,7 +12,7 @@ from ...models.LearningFormat import LearningFormat
 
 
 class CourseFilterSetTest(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -38,7 +38,6 @@ class CourseFilterSetTest(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 1000.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -46,6 +45,7 @@ class CourseFilterSetTest(TestCase):
             'category': category,
             'preview': 'temporary_img',
             'short_description': 'q' * 50,
+            'avg_rating': 0,
         })
 
         Course.objects.create(**{
@@ -53,7 +53,6 @@ class CourseFilterSetTest(TestCase):
             'teacher': teacher,
             'title': 'w' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -61,6 +60,7 @@ class CourseFilterSetTest(TestCase):
             'category': category,
             'preview': 'temporary_img',
             'short_description': 'q' * 50,
+            'avg_rating': 5,
         })
 
         course_stat = cls.course.statistic
@@ -177,7 +177,7 @@ class CourseFilterSetTest(TestCase):
         with self.assertRaises(GraphQLError) as _raise:
             self.tested_class(data=data, queryset=self.base_queryset).qs
 
-        expected_raise = 'category_id: This is not global Id.'
+        expected_raise = 'category_id: not valid value.'
         real_raise = str(_raise.exception)
 
         self.assertEqual(expected_raise, real_raise)
@@ -222,7 +222,7 @@ class CourseFilterSetTest(TestCase):
                                           queryset=self.base_queryset)
 
         expected_queryset = list(self.base_queryset.filter(**{
-            'statistic__avg_rating__gt': 0,
+            'avg_rating__gt': 0,
         }))
         real_queryset = list(filtered_data.qs)
 
@@ -236,7 +236,7 @@ class CourseFilterSetTest(TestCase):
                                           queryset=self.base_queryset)
 
         expected_queryset = list(self.base_queryset.filter(**{
-            'statistic__avg_rating__gte': 0,
+            'avg_rating__gte': 0,
         }))
         real_queryset = list(filtered_data.qs)
 
@@ -250,7 +250,7 @@ class CourseFilterSetTest(TestCase):
                                           queryset=self.base_queryset)
 
         expected_queryset = list(self.base_queryset.filter(**{
-            'statistic__avg_rating__gte': 3,
+            'avg_rating__gte': 3,
         }))
         real_queryset = list(filtered_data.qs)
 
@@ -264,7 +264,7 @@ class CourseFilterSetTest(TestCase):
                                           queryset=self.base_queryset)
 
         expected_queryset = list(self.base_queryset.filter(**{
-            'statistic__avg_rating__lt': 5,
+            'avg_rating__lt': 5,
         }))
         real_queryset = list(filtered_data.qs)
 
@@ -278,7 +278,7 @@ class CourseFilterSetTest(TestCase):
                                           queryset=self.base_queryset)
 
         expected_queryset = list(self.base_queryset.filter(**{
-            'statistic__avg_rating__lte': 5,
+            'avg_rating__lte': 5,
         }))
         real_queryset = list(filtered_data.qs)
 
@@ -292,7 +292,7 @@ class CourseFilterSetTest(TestCase):
                                           queryset=self.base_queryset)
 
         expected_queryset = list(self.base_queryset.filter(**{
-            'statistic__avg_rating__lte': 3,
+            'avg_rating__lte': 3,
         }))
         real_queryset = list(filtered_data.qs)
 
