@@ -5,7 +5,7 @@ from ...serializers.FeedbackSerializer import FeedbackSerializer
 
 
 class FeedbackSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

@@ -8,7 +8,7 @@ from ...models.Feedback import Feedback
 
 
 class FeedbackModelTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -47,6 +47,24 @@ class FeedbackModelTestCase(TestCase):
         }
 
         self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_HelpTextForEachField(self):
+        expected_help_text = {
+            'body': 'Message content.',
+            'created_at': 'Date of writing the message.',
+            'email': 'Email of the user who wrote.',
+            'id': '',
+            'is_closed': 'Has the message been processed.',
+            'name': 'Full name of the user who wrote.',
+        }
+        real_help_text = {
+            field.name: (
+                field.help_text if hasattr(field, 'help_text') else ''
+            )
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_help_text, real_help_text)
 
     def test_When_DataIsNone_Should_ErrorBlankField(self):
         category = self.tested_class()

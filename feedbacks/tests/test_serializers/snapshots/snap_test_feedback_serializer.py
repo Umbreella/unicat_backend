@@ -8,8 +8,8 @@ snapshots = Snapshot()
 
 snapshots['FeedbackSerializerTestCase::test_Should_SpecificFormatForEachField 1'] = '''FeedbackSerializer():
     id = IntegerField(label='ID', read_only=True)
-    name = CharField(max_length=255)
-    email = EmailField(max_length=128)
-    body = CharField(style={'base_template': 'textarea.html'})
-    created_at = DateTimeField(required=False)
-    is_closed = BooleanField(required=False)'''
+    name = CharField(help_text='Full name of the user who wrote.', max_length=255)
+    email = EmailField(help_text='Email of the user who wrote.', max_length=128)
+    body = CharField(help_text='Message content.', style={'base_template': 'textarea.html'})
+    created_at = DateTimeField(help_text='Date of writing the message.', required=False)
+    is_closed = BooleanField(help_text='Has the message been processed.', required=False)'''

@@ -11,13 +11,14 @@ from rest_framework.viewsets import ModelViewSet
 from users.models import User
 
 from ...models.Feedback import Feedback
-from ...permissions.CreateAnyButEditAdmin import CreateAnyButEditAdmin
+from ...permissions.CreateAnyButEditAdminPermission import \
+    CreateAnyButEditAdminPermission
 from ...serializers.FeedbackSerializer import FeedbackSerializer
 from ...views.FeedbackView import FeedbackView
 
 
 class FeedbackViewTestCase(APITestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -69,7 +70,7 @@ class FeedbackViewTestCase(APITestCase):
 
     def test_Should_PermissionClassesIsAdminUser(self):
         expected_permission_classes = (
-            CreateAnyButEditAdmin,
+            CreateAnyButEditAdminPermission,
         )
         real_permission_classes = self.tested_class.permission_classes
 
