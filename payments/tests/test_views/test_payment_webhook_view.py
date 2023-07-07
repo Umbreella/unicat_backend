@@ -1,5 +1,3 @@
-from types import SimpleNamespace
-
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -19,7 +17,7 @@ from ...views.PaymentWebhookView import PaymentWebhookView
 
 
 class PaymentWebhookViewTestCase(APITestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -46,7 +44,6 @@ class PaymentWebhookViewTestCase(APITestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -75,12 +72,14 @@ class PaymentWebhookViewTestCase(APITestCase):
             if not payload:
                 raise ValueError()
 
-            event = SimpleNamespace()
-            event.type = header
-            event.data = SimpleNamespace()
-            event.data.object = {
-                'id': payload,
-            }
+            event = type('event', (object,), {
+                'type': header,
+                'data': type('object', (object,), {
+                    'object': {
+                        'id': payload,
+                    },
+                }),
+            })
 
             return event
 

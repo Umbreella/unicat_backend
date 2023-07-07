@@ -1,24 +1,22 @@
 from django.core.exceptions import ObjectDoesNotExist
+from graphql_relay import from_global_id
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from courses.models.Course import Course
 from courses.schema.CourseType import CourseType
-from unicat.graphql.functions import get_id_from_value
 
 
 class PaymentCourseSerializer(serializers.Serializer):
     course_id = serializers.CharField(min_length=16, max_length=40)
 
     def validate(self, attrs):
-        course_id_b64 = attrs.get('course_id')
+        type_, course_id = from_global_id(attrs.get('course_id'))
 
-        try:
-            course_id = get_id_from_value(CourseType, course_id_b64)
-        except Exception as ex:
+        if type_ != CourseType.__name__:
             detail = {
                 'course_id': [
-                    ex,
+                    'Not valid value.',
                 ],
             }
             raise ValidationError(detail)
@@ -34,5 +32,5 @@ class PaymentCourseSerializer(serializers.Serializer):
             raise ValidationError(detail)
 
         return {
-            'course_id': course_id,
+            'course_id': self.course.id,
         }

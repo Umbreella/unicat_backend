@@ -11,7 +11,7 @@ from ...serializers.PaymentCourseSerializer import PaymentCourseSerializer
 
 
 class PaymentCourseSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -36,7 +36,6 @@ class PaymentCourseSerializerTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -154,7 +153,7 @@ class PaymentCourseSerializerTestCase(TestCase):
         expected_raise = {
             'course_id': [
                 ErrorDetail(**{
-                    'string': 'Cant decode base64 string.',
+                    'string': 'Not valid value.',
                     'code': 'invalid',
                 }),
             ],

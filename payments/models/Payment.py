@@ -8,14 +8,36 @@ from ..tasks.CreateUserCourseTask import create_user_course_task
 
 
 class Payment(models.Model):
-    id = models.CharField(max_length=27, primary_key=True)
-    user = models.ForeignKey(User, on_delete=models.CASCADE,
-                             related_name='payments')
-    course = models.ForeignKey(Course, on_delete=models.CASCADE,
-                               related_name='payments')
-    amount = models.DecimalField(max_digits=7, decimal_places=2)
-    created_at = models.DateTimeField(default=timezone.now)
-    is_success = models.BooleanField(default=False)
+    id = models.CharField(**{
+        'max_length': 27,
+        'primary_key': True,
+        'help_text': 'Payment intent ID from StripeAPI.',
+    })
+    user = models.ForeignKey(**{
+        'to': User,
+        'on_delete': models.CASCADE,
+        'related_name': 'payments',
+        'help_text': 'The user for whom the payment was created.',
+    })
+    course = models.ForeignKey(**{
+        'to': Course,
+        'on_delete': models.CASCADE,
+        'related_name': 'payments',
+        'help_text': 'The course for which the payment was created.',
+    })
+    amount = models.DecimalField(**{
+        'max_digits': 9,
+        'decimal_places': 2,
+        'help_text': 'Amount of payment.',
+    })
+    created_at = models.DateTimeField(**{
+        'default': timezone.now,
+        'help_text': 'Payment creation time.',
+    })
+    is_success = models.BooleanField(**{
+        'default': False,
+        'help_text': 'Payment status.',
+    })
 
     def __iter__(self):
         for key in self.__dict__:
@@ -23,6 +45,9 @@ class Payment(models.Model):
                 yield key, getattr(self, key)
 
     def save(self, *args, **kwargs):
+        if isinstance(self.amount, float):
+            self.amount = str(self.amount)
+
         self.full_clean()
         super().save(*args, **kwargs)
 

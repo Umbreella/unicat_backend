@@ -13,7 +13,7 @@ from ...schema.PaymentType import PaymentQuery, PaymentType
 
 
 class PaymentTypeTestCase(JSONWebTokenTestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -39,7 +39,6 @@ class PaymentTypeTestCase(JSONWebTokenTestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -54,7 +53,6 @@ class PaymentTypeTestCase(JSONWebTokenTestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,

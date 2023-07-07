@@ -15,7 +15,7 @@ from ...models.Payment import Payment
 
 
 class PaymentModelTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -39,7 +39,6 @@ class PaymentModelTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -53,7 +52,7 @@ class PaymentModelTestCase(TestCase):
             'id': 'q' * 27,
             'user': user,
             'course': course,
-            'amount': 100.0,
+            'amount': 100.12,
         }
 
         cls.date_format = '%H-%M %d-%m-%Y'
@@ -84,6 +83,22 @@ class PaymentModelTestCase(TestCase):
 
         self.assertEqual(expected_fields, real_fields)
 
+    def test_Should_HelpTextForEachField(self):
+        expected_help_text = {
+            'id': 'Payment intent ID from StripeAPI.',
+            'user': 'The user for whom the payment was created.',
+            'course': 'The course for which the payment was created.',
+            'amount': 'Amount of payment.',
+            'created_at': 'Payment creation time.',
+            'is_success': 'Payment status.',
+        }
+        real_help_text = {
+            field.name: field.help_text
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_help_text, real_help_text)
+
     def test_When_CreatePaymentWithOutData_Should_ErrorBlankField(self):
         payment = self.tested_class()
 
@@ -112,7 +127,7 @@ class PaymentModelTestCase(TestCase):
         data = self.data
         data.update({
             'id': 'q' * 30,
-            'amount': '1' * 10,
+            'amount': '1' * 100,
         })
 
         payment = self.tested_class(**data)
@@ -125,7 +140,7 @@ class PaymentModelTestCase(TestCase):
                 'Ensure this value has at most 27 characters (it has 30).',
             ],
             'amount': [
-                'Ensure that there are no more than 7 digits in total.',
+                'Ensure that there are no more than 9 digits in total.',
             ],
         }
         real_raise = _raise.exception.message_dict
