@@ -3,10 +3,10 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.filters import SearchFilter
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin
-from rest_framework.permissions import IsAdminUser
 from rest_framework.test import APITestCase
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 
+from unicat.permissions.DjModelPermForDRF import DjModelPermForDRF
 from users.models import User
 
 from ...serializers.PermissionSerializer import PermissionSerializer
@@ -14,7 +14,7 @@ from ...views.PermissionView import PermissionView
 
 
 class PermissionViewTestCase(APITestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -56,7 +56,7 @@ class PermissionViewTestCase(APITestCase):
 
     def test_Should_PermissionClassesIsAdminUser(self):
         expected_permission_classes = (
-            IsAdminUser,
+            DjModelPermForDRF,
         )
         real_permission_classes = self.tested_class.permission_classes
 

@@ -15,10 +15,10 @@ from .views.UpdatePasswordView import UpdatePasswordView
 from .views.UserView import UserView
 
 urlpatterns = [
-    path('signin', LoginUserView.as_view(), name='signin'),
-    path('token/refresh', TokenRefreshView.as_view(), name='token_refresh'),
-    path('token/destroy', LogoutUserView.as_view(), name='token_destroy'),
-    path('signup', RegistrationUserView.as_view(), name='signup'),
+    path('signin/', LoginUserView.as_view(), name='signin'),
+    path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('token/destroy/', LogoutUserView.as_view(), name='token_destroy'),
+    path('signup/', RegistrationUserView.as_view(), name='signup'),
     path('password/reset/', ResetPasswordView.as_view(),
          name='password_reset'),
     path('password/update/', UpdatePasswordView.as_view(),

@@ -15,7 +15,7 @@ class TeacherType(DjangoObjectType):
         fields = '__all__'
 
     def resolve_full_name(self, info):
-        return self.user.get_fullname()
+        return info.context.loaders.user_loader.load(self.user_id)
 
     def resolve_photo(self, info):
         if self.user.photo:

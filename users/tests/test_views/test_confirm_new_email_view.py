@@ -10,7 +10,7 @@ from ...views.ConfirmNewEmailView import ConfirmNewEmailView
 
 
 class UpdatePasswordViewTestCase(APITestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -114,6 +114,10 @@ class UpdatePasswordViewTestCase(APITestCase):
         expected_email = 'test1@email.com'
         real_email = self.user.email
 
+        expected_password = True
+        real_password = self.user.check_password('password')
+
         self.assertEqual(expected_status, real_status)
         self.assertEqual(expected_data, real_data)
         self.assertEqual(expected_email, real_email)
+        self.assertEqual(expected_password, real_password)

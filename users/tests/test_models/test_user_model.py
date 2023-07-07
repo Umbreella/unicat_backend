@@ -1,11 +1,15 @@
 from django.core.exceptions import ValidationError
+from django.db.models import (BigAutoField, BooleanField, CharField,
+                              DateTimeField, EmailField, ImageField,
+                              ManyToManyField, ManyToManyRel, ManyToOneRel,
+                              OneToOneRel)
 from django.test import TestCase
 
 from ...models import User
 
 
-class TeacherModelTestCase(TestCase):
-    databases = {'master'}
+class UserModelTestCase(TestCase):
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -17,6 +21,98 @@ class TeacherModelTestCase(TestCase):
             'email': 'q' * 50 + '@q.qq',
             'password': 'q' * 50,
         }
+
+    def test_Should_IncludeRequiredFields(self):
+        expected_fields = [
+            'logentry', 'outstandingtoken', 'my_courses', 'my_progress',
+            'comment', 'new', 'my_lessons', 'userlesson', 'payments',
+            'teacher', 'resetpassword', 'changeemail', 'id', 'last_login',
+            'is_superuser', 'email', 'password', 'first_name', 'last_name',
+            'photo', 'is_staff', 'is_active', 'groups', 'user_permissions',
+        ]
+        real_fields = [
+            field.name for field in self.tested_class._meta.get_fields()
+        ]
+
+        self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_SpecificTypeForEachField(self):
+        expected_fields = {
+            'logentry': ManyToOneRel,
+            'outstandingtoken': ManyToOneRel,
+            'my_courses': ManyToManyRel,
+            'my_progress': ManyToOneRel,
+            'comment': ManyToOneRel,
+            'new': ManyToOneRel,
+            'my_lessons': ManyToManyRel,
+            'userlesson': ManyToOneRel,
+            'payments': ManyToOneRel,
+            'resetpassword': ManyToOneRel,
+            'teacher': OneToOneRel,
+            'changeemail': ManyToOneRel,
+            'id': BigAutoField,
+            'last_login': DateTimeField,
+            'is_superuser': BooleanField,
+            'email': EmailField,
+            'password': CharField,
+            'first_name': CharField,
+            'last_name': CharField,
+            'photo': ImageField,
+            'is_staff': BooleanField,
+            'is_active': BooleanField,
+            'groups': ManyToManyField,
+            'user_permissions': ManyToManyField,
+        }
+        real_fields = {
+            field.name: field.__class__
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_HelpTextForEachField(self):
+        expected_help_text = {
+            'logentry': '',
+            'outstandingtoken': '',
+            'my_courses': '',
+            'my_progress': '',
+            'comment': '',
+            'new': '',
+            'my_lessons': '',
+            'userlesson': '',
+            'payments': '',
+            'resetpassword': '',
+            'teacher': '',
+            'changeemail': '',
+            'id': '',
+            'last_login': '',
+            'is_superuser': (
+                'Designates that this user has all permissions without '
+                'explicitly assigning them.'
+            ),
+            'email': 'User`s unique email address.',
+            'password': 'User password.',
+            'first_name': 'Username.',
+            'last_name': 'User`s last name.',
+            'photo': 'User Image.',
+            'is_staff': (
+                'Does the user have access to the administration panel.'
+            ),
+            'is_active': 'Is this account active.',
+            'groups': (
+                'The groups this user belongs to. A user will get all '
+                'permissions granted to each of their groups.'
+            ),
+            'user_permissions': 'Specific permissions for this user.',
+        }
+        real_help_text = {
+            field.name: (
+                field.help_text if hasattr(field, 'help_text') else ''
+            )
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_help_text, real_help_text)
 
     def test_When_CreateUserWithOutData_Should_ErrorBlankField(self):
         user = self.tested_class()
@@ -94,13 +190,9 @@ class TeacherModelTestCase(TestCase):
         user = self.tested_class(**data)
         user.save()
 
-        expected_fullname = f'{user.first_name} {user.last_name}'
-        real_fullname = user.get_fullname()
-
-        expected_str = user.get_fullname()
+        expected_str = f'{user.first_name} {user.last_name}'
         real_str = str(user)
 
-        self.assertEqual(expected_fullname, real_fullname)
         self.assertEqual(expected_str, real_str)
 
     def test_When_NamesIsNull_Should_ReturnEmailAsFullName(self):
@@ -148,8 +240,12 @@ class TeacherModelTestCase(TestCase):
         expected_is_superuser = False
         real_is_superuser = user.is_superuser
 
+        expected_is_active = False
+        real_is_active = user.is_active
+
         self.assertEqual(expected_is_staff, real_is_staff)
         self.assertEqual(expected_is_superuser, real_is_superuser)
+        self.assertEqual(expected_is_active, real_is_active)
 
     def test_When_UseCreateSuperUserFromObjectManager_Should_SaveUserAsAdmin(
             self
@@ -165,5 +261,9 @@ class TeacherModelTestCase(TestCase):
         expected_is_superuser = True
         real_is_superuser = user.is_superuser
 
+        expected_is_active = True
+        real_is_active = user.is_active
+
         self.assertEqual(expected_is_staff, real_is_staff)
         self.assertEqual(expected_is_superuser, real_is_superuser)
+        self.assertEqual(expected_is_active, real_is_active)

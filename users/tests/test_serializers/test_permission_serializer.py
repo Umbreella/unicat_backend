@@ -5,7 +5,7 @@ from ...serializers.PermissionSerializer import PermissionSerializer
 
 
 class PermissionSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

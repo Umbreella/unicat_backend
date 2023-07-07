@@ -9,7 +9,7 @@ from ...views.RegistrationUserView import RegistrationUserView
 
 
 class RegistrationUserViewTestCase(APITestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

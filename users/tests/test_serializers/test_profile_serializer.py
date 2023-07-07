@@ -9,7 +9,7 @@ from ...serializers.ProfileSerializer import ProfileSerializer
 
 
 class UpdatePasswordSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

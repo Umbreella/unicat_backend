@@ -5,9 +5,10 @@ from itertools import islice
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.filters import OrderingFilter, SearchFilter
-from rest_framework.permissions import IsAdminUser
 from rest_framework.test import APITestCase
 from rest_framework.viewsets import ModelViewSet
+
+from unicat.permissions.DjModelPermForDRF import DjModelPermForDRF
 
 from ...models import User
 from ...serializers.ListUserSerializer import ListUserSerializer
@@ -16,7 +17,7 @@ from ...views.UserView import UserView
 
 
 class UserViewTestCase(APITestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -69,7 +70,7 @@ class UserViewTestCase(APITestCase):
 
     def test_Should_PermissionClassesIsAdminUser(self):
         expected_permission_classes = (
-            IsAdminUser,
+            DjModelPermForDRF,
         )
         real_permission_classes = self.tested_class.permission_classes
 
@@ -115,15 +116,11 @@ class UserViewTestCase(APITestCase):
 
         self.assertEqual(expected_methods, real_methods)
 
-    def test_Should_OverrideSuperMethods(self):
-        expected_methods = [
-            ModelViewSet.list,
-        ]
-        real_methods = [
-            self.tested_class.list,
-        ]
+    def test_Should_OverrideSuperMethodList(self):
+        expected_method = ModelViewSet.list
+        real_method = self.tested_class.list
 
-        self.assertNotEqual(expected_methods, real_methods)
+        self.assertNotEqual(expected_method, real_method)
 
     def test_When_PutMethodForListUsers_Should_ErrorWithStatus405(self):
         response = self.logged_client.put(self.url_for_list)

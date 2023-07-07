@@ -5,7 +5,7 @@ from ...serializers.TeacherSerializer import TeacherSerializer
 
 
 class TeacherSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

@@ -10,7 +10,7 @@ from ...views.ResetPasswordView import ResetPasswordView
 
 
 class UpdatePasswordViewTestCase(APITestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

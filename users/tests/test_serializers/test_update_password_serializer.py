@@ -11,7 +11,7 @@ from ...serializers.UpdatePasswordSerializer import UpdatePasswordSerializer
 
 
 class UpdatePasswordSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

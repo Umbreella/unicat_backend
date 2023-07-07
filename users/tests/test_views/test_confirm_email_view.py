@@ -11,7 +11,7 @@ from ...views.ConfirmEmailView import ConfirmEmailView
 
 
 class UpdatePasswordViewTestCase(APITestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -19,7 +19,7 @@ class UpdatePasswordViewTestCase(APITestCase):
         cls.serializer = ConfirmEmailSerializer
         cls.url = reverse('confirm_email')
 
-        cls.user = User.objects.create_superuser(**{
+        cls.user = User.objects.create_user(**{
             'id': 1,
             'email': 'test@email.com',
             'password': 'password',

@@ -1,14 +1,16 @@
-from django.test import TestCase
+import json
+
 from graphene import Context, Schema
 from graphene.test import Client
+from graphene_django.utils import GraphQLTestCase
 
 from ...models import User
 from ...models.Teacher import Teacher
 from ...schema.TeacherType import TeacherQuery, TeacherType
 
 
-class TeacherTypeTestCase(TestCase):
-    databases = {'master'}
+class TeacherTypeTestCase(GraphQLTestCase):
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -23,8 +25,8 @@ class TeacherTypeTestCase(TestCase):
         })
 
         user_with_out_photo = User.objects.create(**{
-            'first_name': 'q' * 50,
-            'last_name': 'q' * 50,
+            'first_name': 'w' * 50,
+            'last_name': 'w' * 50,
             'email': 'w' * 50 + '@q.qq',
             'password': 'q' * 50,
         })
@@ -33,8 +35,8 @@ class TeacherTypeTestCase(TestCase):
             'id': 1,
             'user': user_with_photo,
             'description': 'q' * 50,
-            'average_rating': 1.0,
-            'count_graduates': 1,
+            'avg_rating': 1.0,
+            'count_reviews': 1,
             'facebook': 'q' * 50,
             'twitter': 'q' * 50,
             'google_plus': 'q' * 50,
@@ -45,8 +47,8 @@ class TeacherTypeTestCase(TestCase):
             'id': 2,
             'user': user_with_out_photo,
             'description': 'q' * 50,
-            'average_rating': 1.0,
-            'count_graduates': 1,
+            'avg_rating': 1.0,
+            'count_reviews': 1,
             'facebook': 'q' * 50,
             'twitter': 'q' * 50,
             'google_plus': 'q' * 50,
@@ -62,8 +64,10 @@ class TeacherTypeTestCase(TestCase):
         self.gql_client = Client(schema=schema)
 
     def test_Should_IncludeAllFieldsFromModel(self):
-        expected_fields = [field.name for field in Teacher._meta.fields] + [
-            'course_set', 'full_name', 'photo'
+        expected_fields = [
+            'id', 'user', 'description', 'avg_rating', 'count_reviews',
+            'facebook', 'twitter', 'google_plus', 'vk', 'course_set',
+            'full_name', 'photo',
         ]
         real_fields = list(self.tested_class._meta.fields)
 
@@ -94,13 +98,13 @@ class TeacherTypeTestCase(TestCase):
                             'node': {
                                 'id': 'VGVhY2hlclR5cGU6MQ==',
                                 'photo': 'build_absolute_uri',
-                            }
+                            },
                         },
                         {
                             'node': {
                                 'id': 'VGVhY2hlclR5cGU6Mg==',
                                 'photo': None,
-                            }
+                            },
                         },
                     ],
                 },
@@ -111,10 +115,10 @@ class TeacherTypeTestCase(TestCase):
         self.assertEqual(expected_response, real_response)
 
     def test_When_SendQueryWithFullName_Should_ReturnFullNameForTeacher(self):
-        response = self.gql_client.execute(
+        response = self.query(
             """
             query {
-                allTeachers (first: 1) {
+                allTeachers {
                     edges {
                         node {
                             fullName
@@ -125,21 +129,24 @@ class TeacherTypeTestCase(TestCase):
             """,
         )
 
-        teacher = Teacher.objects.first()
-
         expected_response = {
             'data': {
                 'allTeachers': {
                     'edges': [
                         {
                             'node': {
-                                'fullName': teacher.user.get_fullname()
-                            }
-                        }
-                    ]
-                }
-            }
+                                'fullName': f'{"q" * 50} {"q" * 50}',
+                            },
+                        },
+                        {
+                            'node': {
+                                'fullName': f'{"w" * 50} {"w" * 50}',
+                            },
+                        },
+                    ],
+                },
+            },
         }
-        real_response = response
+        real_response = json.loads(response.content)
 
         self.assertEqual(expected_response, real_response)

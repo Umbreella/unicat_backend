@@ -11,7 +11,7 @@ from ...serializers.ConfirmNewEmailSerializer import ConfirmNewEmailSerializer
 
 
 class ConfirmNewEmailSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

@@ -9,14 +9,40 @@ from .UserManager import UserManager
 
 
 class User(AbstractBaseUser, PermissionsMixin):
-    email = models.EmailField(max_length=128, unique=True)
-    password = models.CharField(max_length=128)
-    first_name = models.CharField(max_length=128, blank=True)
-    last_name = models.CharField(max_length=128, blank=True)
-    photo = models.ImageField(upload_to='teachers/%Y/%m/%d/', default=None,
-                              null=True, blank=True)
-    is_staff = models.BooleanField(default=False)
-    is_active = models.BooleanField(default=False)
+    email = models.EmailField(**{
+        'max_length': 128,
+        'unique': True,
+        'help_text': 'User`s unique email address.',
+    })
+    password = models.CharField(**{
+        'max_length': 128,
+        'help_text': 'User password.',
+    })
+    first_name = models.CharField(**{
+        'max_length': 128,
+        'blank': True,
+        'help_text': 'Username.',
+    })
+    last_name = models.CharField(**{
+        'max_length': 128,
+        'blank': True,
+        'help_text': 'User`s last name.',
+    })
+    photo = models.ImageField(**{
+        'upload_to': 'teachers/%Y/%m/%d/',
+        'default': None,
+        'null': True,
+        'blank': True,
+        'help_text': 'User Image.',
+    })
+    is_staff = models.BooleanField(**{
+        'default': False,
+        'help_text': 'Does the user have access to the administration panel.',
+    })
+    is_active = models.BooleanField(**{
+        'default': False,
+        'help_text': 'Is this account active.',
+    })
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ()
@@ -24,15 +50,18 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     def __str__(self):
-        if len(self.get_fullname()) > 1:
-            return self.get_fullname()
+        fullname = f'{self.first_name} {self.last_name}'
+
+        if len(fullname) > 1:
+            return fullname
 
         return self.email
 
-    def get_fullname(self):
-        return f'{self.first_name} {self.last_name}'
-
     def save(self, *args, **kwargs):
+        self.first_name = self.first_name.strip()
+        self.last_name = self.last_name.strip()
+        self.email = self.email.strip()
+
         self.full_clean()
 
         current_password = self.password
@@ -41,17 +70,17 @@ class User(AbstractBaseUser, PermissionsMixin):
         if not re.fullmatch(hashed_password_pattern, current_password):
             self.set_password(current_password)
 
-        self.first_name = str(self.first_name).strip()
-        self.last_name = str(self.last_name).strip()
-        self.email = str(self.email).strip()
-
         super().save(*args, **kwargs)
 
     def __get_hashed_pattern(self):
-        current_hash_algorithm = settings.PASSWORD_HASHERS[0]
+        hash_algorithms = {
+            'PBKDF2PasswordHasher': r'\w+[$]\d+[$]\w+[$].+',
+            'MD5PasswordHasher': r'\w+[$]\w+[$].+',
+        }
 
-        if 'PBKDF2PasswordHasher' in current_hash_algorithm:
-            return r'\w+[$]\d+[$]\w+[$].+'
+        password_hasher = settings.PASSWORD_HASHERS[0].split('.')[-1]
+        current_hash = hash_algorithms.get(password_hasher)
 
-        if 'MD5PasswordHasher' in current_hash_algorithm:
-            return r'\w+[$]\w+[$].+'
+        assert current_hash is not None, 'Not found password hasher'
+
+        return current_hash

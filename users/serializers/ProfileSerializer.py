@@ -1,9 +1,9 @@
 from django.contrib.auth.hashers import check_password
+from django.core.exceptions import ValidationError as DjValidationError
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import CharField, EmailField, Serializer
 
-from ..models import User
 from ..models.ChangeEmail import ChangeEmail
 from ..tasks.SendConfirmNewEmailTask import send_confirm_new_email_task
 
@@ -38,22 +38,13 @@ class ProfileSerializer(Serializer):
         current_password = validated_data.get('current_password')
 
         if email and instance.email != email:
-            email_is_used = User.objects.filter(**{
-                'email': email,
-            }).exists()
-
-            if email_is_used:
-                detail = {
-                    'email': [
-                        'You cannot use this email as a new email.',
-                    ],
-                }
-                raise ValidationError(detail)
-
-            new_email = ChangeEmail.objects.create(**{
-                'user': instance,
-                'email': email,
-            })
+            try:
+                new_email = ChangeEmail.objects.create(**{
+                    'user': instance,
+                    'email': email,
+                })
+            except DjValidationError as ex:
+                raise ValidationError(ex.message_dict)
 
             send_confirm_new_email_task.apply_async(kwargs={
                 'email_url': str(new_email.url),

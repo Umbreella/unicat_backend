@@ -8,7 +8,7 @@ from ...schema.UserType import UserType
 
 
 class UserTypeTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

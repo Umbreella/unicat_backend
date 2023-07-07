@@ -9,7 +9,7 @@ from ...views.ProfileView import ProfileView
 
 
 class ProfileViewTestCase(APITestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

@@ -5,7 +5,7 @@ from ...serializers.GroupSerializer import GroupSerializer
 
 
 class GroupSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

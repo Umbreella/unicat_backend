@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core import mail
 from django.test import TestCase
 
@@ -5,7 +6,7 @@ from ...tasks.SendResetPasswordEmailTask import send_reset_password_email_task
 
 
 class SendConfirmEmailTaskTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -19,6 +20,9 @@ class SendConfirmEmailTaskTestCase(TestCase):
 
         expected_state = 'SUCCESS'
         real_state = task.state
+
+        expected_result = 'Email is sent.'
+        real_result = str(task.result)
 
         _mail = mail.outbox[0]
 
@@ -37,13 +41,14 @@ class SendConfirmEmailTaskTestCase(TestCase):
         ))
         real_mail_body = _mail.body
 
-        expected_mail_from_email = 'test@test.com'
+        expected_mail_from_email = settings.EMAIL_HOST_USER
         real_mail_from_email = _mail.from_email
 
         expected_mail_recipients = ['test@test.com', ]
         real_mail_recipients = _mail.recipients()
 
         self.assertEqual(expected_state, real_state)
+        self.assertEqual(expected_result, real_result)
         self.assertEqual(expected_mail_subject, real_mail_subject)
         self.assertEqual(expected_mail_body, real_mail_body)
         self.assertEqual(expected_mail_from_email, real_mail_from_email)

@@ -10,7 +10,7 @@ from ...serializers.ConfirmEmailSerializer import ConfirmEmailSerializer
 
 
 class ConfirmEmailSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

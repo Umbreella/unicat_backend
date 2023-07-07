@@ -9,7 +9,7 @@ from ...serializers.RegistrationUserSerializer import \
 
 
 class RegistrationUserSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

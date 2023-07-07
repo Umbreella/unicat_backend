@@ -16,7 +16,7 @@ def send_confirm_email_task(user_id: int, user_email: str):
         'algorithm': 'HS256',
     })
 
-    url = f'http://localhost:3000/email/confirm/{token}'
+    url = f'{settings.MAIN_HOST}/email/confirm/{token}'
     html = render_to_string('ConfirmEmail.html', {'url': url})
     body = (
         'Hi,',
@@ -32,7 +32,9 @@ def send_confirm_email_task(user_id: int, user_email: str):
     send_mail(**{
         'subject': 'Please confirm your email',
         'message': '\n'.join(body),
-        'from_email': user_email,
+        'from_email': settings.EMAIL_HOST_USER,
         'recipient_list': (user_email,),
         'html_message': html,
     })
+
+    return 'Email is sent.'

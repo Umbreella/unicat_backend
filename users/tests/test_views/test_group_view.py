@@ -6,10 +6,10 @@ from django.contrib.auth.models import Group
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.filters import OrderingFilter
-from rest_framework.permissions import IsAdminUser
 from rest_framework.test import APITestCase
 from rest_framework.viewsets import ModelViewSet
 
+from unicat.permissions.DjModelPermForDRF import DjModelPermForDRF
 from users.models import User
 
 from ...serializers.GroupSerializer import GroupSerializer
@@ -17,7 +17,7 @@ from ...views.GroupView import GroupView
 
 
 class GroupViewTestCase(APITestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -65,7 +65,7 @@ class GroupViewTestCase(APITestCase):
 
     def test_Should_PermissionClassesIsAdminUser(self):
         expected_permission_classes = (
-            IsAdminUser,
+            DjModelPermForDRF,
         )
         real_permission_classes = self.tested_class.permission_classes
 

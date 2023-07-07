@@ -30,7 +30,7 @@ def ResponseFromRequestView(request):
     ]
 )
 class CookiesMiddlewareTestCase(APITestCase, URLPatternsTestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     urlpatterns = [
         path('test', ResponseFromRequestView, name='test'),

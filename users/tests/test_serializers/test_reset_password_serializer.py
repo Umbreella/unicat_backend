@@ -9,7 +9,7 @@ from ...serializers.ResetPasswordSerializer import ResetPasswordSerializer
 
 
 class RegistrationUserSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
