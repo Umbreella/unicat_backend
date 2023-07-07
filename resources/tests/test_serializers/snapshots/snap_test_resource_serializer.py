@@ -8,6 +8,6 @@ snapshots = Snapshot()
 
 snapshots['ResourceSerializerTestCase::test_Should_SpecificFormatForEachField 1'] = '''ResourceSerializer():
     id = IntegerField(label='ID', read_only=True)
-    name = CharField(max_length=255)
+    name = CharField(help_text='The file name given by the user.', max_length=255)
     file = Base64ImageField()
-    loaded_at = DateTimeField(required=False)'''
+    loaded_at = DateTimeField(help_text='File upload time.', required=False)'''

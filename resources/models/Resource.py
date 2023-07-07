@@ -14,9 +14,18 @@ def get_file_path(instance, filename):
 
 
 class Resource(models.Model):
-    name = models.CharField(max_length=255)
-    file = models.ImageField(upload_to=get_file_path)
-    loaded_at = models.DateTimeField(default=timezone.now)
+    name = models.CharField(**{
+        'max_length': 255,
+        'help_text': 'The file name given by the user.',
+    })
+    file = models.ImageField(**{
+        'upload_to': get_file_path,
+        'help_text': 'The path to the file in the system.',
+    })
+    loaded_at = models.DateTimeField(**{
+        'default': timezone.now,
+        'help_text': 'File upload time.',
+    })
 
     def save(self, *args, **kwargs):
         self.full_clean()

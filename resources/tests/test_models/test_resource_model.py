@@ -4,6 +4,7 @@ import shutil
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.db.models import BigAutoField, CharField, DateTimeField, ImageField
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
@@ -17,7 +18,7 @@ from ...models.Resource import Resource
     ),
 )
 class ResourceModelTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -51,6 +52,46 @@ class ResourceModelTestCase(TestCase):
     def tearDown(self) -> None:
         if os.path.exists(self._path):
             os.remove(self._path)
+
+    def test_Should_IncludeRequiredFields(self):
+        expected_fields = [
+            'id', 'name', 'file', 'loaded_at',
+        ]
+        real_fields = [
+            field.name for field in self.tested_class._meta.get_fields()
+        ]
+
+        self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_SpecificTypeForEachField(self):
+        expected_fields = {
+            'id': BigAutoField,
+            'name': CharField,
+            'file': ImageField,
+            'loaded_at': DateTimeField,
+        }
+        real_fields = {
+            field.name: field.__class__
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_HelpTextForEachField(self):
+        expected_help_text = {
+            'id': '',
+            'name': 'The file name given by the user.',
+            'file': 'The path to the file in the system.',
+            'loaded_at': 'File upload time.',
+        }
+        real_help_text = {
+            field.name: (
+                field.help_text if hasattr(field, 'help_text') else ''
+            )
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_help_text, real_help_text)
 
     def test_When_CreateResourceWithOutData_Should_ErrorBlankField(self):
         resource = self.tested_class()

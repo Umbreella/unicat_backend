@@ -5,10 +5,10 @@ from itertools import islice
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.filters import OrderingFilter, SearchFilter
-from rest_framework.permissions import IsAdminUser
 from rest_framework.test import APITestCase
 from rest_framework.viewsets import ModelViewSet
 
+from unicat.permissions.DjModelPermForDRF import DjModelPermForDRF
 from users.models import User
 
 from ...models.Resource import Resource
@@ -17,7 +17,7 @@ from ...views.ResourceView import ResourceView
 
 
 class ResourceViewTestCase(APITestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -73,7 +73,7 @@ class ResourceViewTestCase(APITestCase):
 
     def test_Should_PermissionClassesIsAdminUser(self):
         expected_permission_classes = (
-            IsAdminUser,
+            DjModelPermForDRF,
         )
         real_permission_classes = self.tested_class.permission_classes
 

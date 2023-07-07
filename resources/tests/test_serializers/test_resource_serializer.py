@@ -5,7 +5,7 @@ from ...serializers.ResourceSerializer import ResourceSerializer
 
 
 class ResourceSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
