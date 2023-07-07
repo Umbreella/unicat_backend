@@ -2,11 +2,11 @@ from django.urls import reverse
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status
 from rest_framework.filters import OrderingFilter
-from rest_framework.permissions import IsAdminUser
 from rest_framework.test import APITestCase
 from rest_framework.viewsets import ModelViewSet
 
 from events.models.New import New
+from unicat.permissions.DjModelPermForDRF import DjModelPermForDRF
 from users.models import User
 
 from ...models.Comment import Comment
@@ -16,7 +16,7 @@ from ...views.CommentView import CommentView
 
 
 class CommentViewTestCase(APITestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -71,7 +71,7 @@ class CommentViewTestCase(APITestCase):
 
     def test_Should_PermissionClassesIsAdminUser(self):
         expected_permission_classes = (
-            IsAdminUser,
+            DjModelPermForDRF,
         )
         real_permission_classes = self.tested_class.permission_classes
 

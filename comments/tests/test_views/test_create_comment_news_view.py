@@ -13,7 +13,7 @@ from ...views.CreateCommentView import CreateCommentView
 
 
 class CreateCommentNewsViewTestCase(APITestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

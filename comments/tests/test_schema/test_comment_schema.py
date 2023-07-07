@@ -1,14 +1,15 @@
-from django.test import TestCase
+import json
+
 from django.utils import timezone
-from graphene import Int, NonNull, Schema, String
+from graphene import Int, NonNull, Schema, String, relay
 from graphene.test import Client
+from graphene_django.utils import GraphQLTestCase
 
 from courses.models.Category import Category
 from courses.models.Course import Course
 from courses.models.LearningFormat import LearningFormat
 from events.models.Event import Event
 from events.models.New import New
-from unicat.graphql.functions import get_value_from_model_id
 from users.models import User
 from users.models.Teacher import Teacher
 from users.schema.UserType import UserType
@@ -18,21 +19,31 @@ from ...models.CommentedTypeChoices import CommentedTypeChoices
 from ...schema.CommentType import CommentQuery, CommentType
 
 
-class CommentTypeTestCase(TestCase):
-    databases = {'master'}
+class CommentTypeTestCase(GraphQLTestCase):
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
         cls.tested_class = CommentType
         cls.model = Comment
 
-        user = User.objects.create(**{
+        first_user = User.objects.create(**{
             'email': 'q' * 50 + '@q.qq',
             'password': 'q' * 50,
         })
 
+        second_user = User.objects.create(**{
+            'email': 'w' * 50 + '@q.qq',
+            'password': 'q' * 50,
+        })
+
+        third_user = User.objects.create(**{
+            'email': 'e' * 50 + '@q.qq',
+            'password': 'q' * 50,
+        })
+
         teacher = Teacher.objects.create(**{
-            'user': user,
+            'user': first_user,
             'description': 'q' * 50,
         })
 
@@ -45,7 +56,6 @@ class CommentTypeTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -72,12 +82,12 @@ class CommentTypeTestCase(TestCase):
             'title': 'q' * 50,
             'short_description': 'q' * 50,
             'description': 'q' * 50,
-            'author': user,
+            'author': first_user,
         })
 
         cls.comment = Comment.objects.create(**{
             'id': 1,
-            'author': user,
+            'author': first_user,
             'body': 'q' * 50,
             'commented_type': CommentedTypeChoices.COURSE.value,
             'commented_id': 1,
@@ -86,7 +96,7 @@ class CommentTypeTestCase(TestCase):
 
         Comment.objects.create(**{
             'id': 2,
-            'author': user,
+            'author': second_user,
             'body': 'q' * 50,
             'commented_type': CommentedTypeChoices.NEWS.value,
             'commented_id': 1,
@@ -94,7 +104,7 @@ class CommentTypeTestCase(TestCase):
 
         Comment.objects.create(**{
             'id': 3,
-            'author': user,
+            'author': third_user,
             'body': 'q' * 50,
             'commented_type': CommentedTypeChoices.EVENT.value,
             'commented_id': 1,
@@ -106,9 +116,23 @@ class CommentTypeTestCase(TestCase):
         schema = Schema(query=CommentQuery)
         self.gql_client = Client(schema=schema)
 
-    def test_When_UseCommentType_Should_IncludeAllFieldsFromModel(self):
+    def test_Should_IncludeDefiniteDjangoModel(self):
+        expected_model = self.model
+        real_model = self.tested_class._meta.model
+
+        self.assertEqual(expected_model, real_model)
+
+    def test_Should_IncludeDefiniteInterfaces(self):
+        expected_interfaces = [
+            relay.Node,
+        ]
+        real_interfaces = list(self.tested_class._meta.interfaces)
+
+        self.assertEqual(expected_interfaces, real_interfaces)
+
+    def test_Should_IncludeAllFieldsFromModel(self):
         expected_fields = [
-            field.name for field in self.model._meta.fields
+            'id', 'author', 'body', 'created_at', 'rating',
         ]
         real_fields = list(self.tested_class._meta.fields)
 
@@ -127,7 +151,7 @@ class CommentTypeTestCase(TestCase):
 
         all_fields_is_nonnull = all([
             real_fields.pop(field).__class__ == NonNull for field in [
-                'id', 'body', 'count_like', 'commented_type', 'commented_id',
+                'id', 'body',
             ]
         ])
 
@@ -218,9 +242,13 @@ class CommentTypeTestCase(TestCase):
         expected_response = {
             'data': {
                 'allCourseComments': {
-                    'edges': [{'node': {'createdAt': created_at}}]
-                }
-            }
+                    'edges': [
+                        {
+                            'node': {'createdAt': created_at, },
+                        },
+                    ],
+                },
+            },
         }
         real_response = response
 
@@ -243,28 +271,19 @@ class CommentTypeTestCase(TestCase):
             """
         )
 
-        edges = []
-        model_name = self.tested_class.__name__
-        filtered_comments = Comment.objects.filter(**{
-            'commented_type': CommentedTypeChoices.COURSE.value,
-            'commented_id': 1
-        }).values('id')
-
-        for comment in filtered_comments:
-            edges += [{
-                'node': {
-                    'id': get_value_from_model_id(model_name=model_name,
-                                                  model_id=comment['id'])
-                }
-            }]
-
         expected_response = {
             'data': {
                 'allCourseComments': {
                     'totalCount': 1,
-                    'edges': edges
-                }
-            }
+                    'edges': [
+                        {
+                            'node': {
+                                'id': 'Q29tbWVudFR5cGU6MQ==',
+                            },
+                        },
+                    ],
+                },
+            },
         }
         real_response = response
 
@@ -286,28 +305,19 @@ class CommentTypeTestCase(TestCase):
             """
         )
 
-        edges = []
-        model_name = self.tested_class.__name__
-        filtered_comments = Comment.objects.filter(**{
-            'commented_type': CommentedTypeChoices.NEWS.value,
-            'commented_id': 1
-        }).values('id')
-
-        for comment in filtered_comments:
-            edges += [{
-                'node': {
-                    'id': get_value_from_model_id(model_name=model_name,
-                                                  model_id=comment['id'])
-                }
-            }]
-
         expected_response = {
             'data': {
                 'allNewsComments': {
                     'totalCount': 1,
-                    'edges': edges
-                }
-            }
+                    'edges': [
+                        {
+                            'node': {
+                                'id': 'Q29tbWVudFR5cGU6Mg==',
+                            },
+                        },
+                    ],
+                },
+            },
         }
         real_response = response
 
@@ -329,29 +339,102 @@ class CommentTypeTestCase(TestCase):
             """
         )
 
-        edges = []
-        model_name = self.tested_class.__name__
-        filtered_comments = Comment.objects.filter(**{
-            'commented_type': CommentedTypeChoices.EVENT.value,
-            'commented_id': 1
-        }).values('id')
-
-        for comment in filtered_comments:
-            edges += [{
-                'node': {
-                    'id': get_value_from_model_id(model_name=model_name,
-                                                  model_id=comment['id'])
-                }
-            }]
-
         expected_response = {
             'data': {
                 'allEventComments': {
                     'totalCount': 1,
-                    'edges': edges
-                }
-            }
+                    'edges': [
+                        {
+                            'node': {
+                                'id': 'Q29tbWVudFR5cGU6Mw==',
+                            },
+                        },
+                    ],
+                },
+            },
         }
         real_response = response
+
+        self.assertEqual(expected_response, real_response)
+
+    def test_When_CallRelatedData_Should_UseLoadersWithOutErrors(self):
+        response = self.query(
+            """
+            query {
+                allCourseComments (first: 1){
+                    edges {
+                        node {
+                            id
+                            author {
+                                name
+                            }
+                        }
+                    }
+                }
+                allNewsComments (first: 1){
+                    edges {
+                        node {
+                            id
+                            author {
+                                name
+                            }
+                        }
+                    }
+                }
+                allEventComments (first: 1){
+                    edges {
+                        node {
+                            id
+                            author {
+                                name
+                            }
+                        }
+                    }
+                }
+            }
+            """
+        )
+
+        expected_response = {
+            'data': {
+                'allCourseComments': {
+                    'edges': [
+                        {
+                            'node': {
+                                'id': 'Q29tbWVudFR5cGU6MQ==',
+                                'author': {
+                                    'name': 'q' * 50 + '@q.qq',
+                                },
+                            },
+                        },
+                    ],
+                },
+                'allEventComments': {
+                    'edges': [
+                        {
+                            'node': {
+                                'id': 'Q29tbWVudFR5cGU6MQ==',
+                                'author': {
+                                    'name': 'q' * 50 + '@q.qq',
+                                },
+                            },
+                        },
+                    ],
+                },
+                'allNewsComments': {
+                    'edges': [
+                        {
+                            'node': {
+                                'id': 'Q29tbWVudFR5cGU6MQ==',
+                                'author': {
+                                    'name': 'q' * 50 + '@q.qq',
+                                },
+                            },
+                        },
+                    ],
+                },
+            },
+        }
+        real_response = json.loads(response.content)
 
         self.assertEqual(expected_response, real_response)

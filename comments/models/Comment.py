@@ -11,14 +11,28 @@ from .CommentedTypeChoices import CommentedTypeChoices as CTChoices
 
 
 class Comment(models.Model):
-    author = models.ForeignKey('users.User', on_delete=models.CASCADE)
-    body = models.TextField()
-    created_at = models.DateTimeField(default=timezone.now)
-    count_like = models.PositiveSmallIntegerField(default=0)
+    author = models.ForeignKey(**{
+        'to': 'users.User',
+        'on_delete': models.CASCADE,
+        'help_text': 'The user who wrote the comment.',
+    })
+    body = models.TextField(**{
+        'help_text': 'The text of the comment itself.',
+    })
+    created_at = models.DateTimeField(**{
+        'default': timezone.now,
+        'help_text': 'Date the comment was written.',
+    })
     commented_type = models.SmallIntegerField(choices=CTChoices.choices)
-    commented_id = models.PositiveBigIntegerField()
-    rating = models.PositiveSmallIntegerField(default=None, null=True,
-                                              blank=True)
+    commented_id = models.PositiveBigIntegerField(**{
+        'help_text': 'ID of the object for which the comment is written.',
+    })
+    rating = models.PositiveSmallIntegerField(**{
+        'default': None,
+        'null': True,
+        'blank': True,
+        'help_text': 'The rating set by the user along with the comment.',
+    })
 
     class Meta:
         indexes = [
@@ -26,8 +40,10 @@ class Comment(models.Model):
         ]
 
     def __str__(self):
-        return f'{self.created_at} | {self.commented_type}:' \
-               f'{self.commented_id} - {self.author}'
+        return (
+            f'{self.created_at} | {self.commented_type}: {self.commented_id} -'
+            f' {self.author}'
+        )
 
     def __iter__(self):
         for key in self.__dict__:

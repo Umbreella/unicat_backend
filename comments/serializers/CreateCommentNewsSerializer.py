@@ -1,8 +1,8 @@
 from django.core.exceptions import ValidationError as DjValidationError
+from graphql_relay import from_global_id
 from rest_framework.exceptions import ValidationError
 
 from events.schema.NewType import NewType
-from unicat.graphql.functions import get_id_from_value
 
 from ..models.Comment import Comment
 from ..models.CommentedTypeChoices import CommentedTypeChoices
@@ -11,13 +11,13 @@ from .CreateCommentSerializer import CreateCommentSerializer
 
 class CreateCommentNewsSerializer(CreateCommentSerializer):
     def validate(self, attrs):
-        commented_id_b64 = attrs['commented_id']
+        type_, commented_id = from_global_id(attrs.get('commented_id'))
 
-        try:
-            commented_id = get_id_from_value(NewType, commented_id_b64)
-        except Exception as ex:
+        if type_ != NewType.__name__:
             detail = {
-                'commented_id': ex,
+                'commented_id': [
+                    'Not valid value.',
+                ],
             }
             raise ValidationError(detail)
 

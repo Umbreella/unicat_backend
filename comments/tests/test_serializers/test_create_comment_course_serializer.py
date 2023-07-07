@@ -15,7 +15,7 @@ from ...serializers.CreateCommentSerializer import CreateCommentSerializer
 
 
 class CreateCommentCourseSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -39,7 +39,6 @@ class CreateCommentCourseSerializerTestCase(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -156,7 +155,7 @@ class CreateCommentCourseSerializerTestCase(TestCase):
         expected_raise = {
             'commented_id': [
                 ErrorDetail(**{
-                    'string': 'This is not global Id.',
+                    'string': 'Not valid value.',
                     'code': 'invalid',
                 }),
             ],
@@ -213,7 +212,6 @@ class CreateCommentCourseSerializerTestCase(TestCase):
             'body': 'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq',
             'commented_id': 1,
             'commented_type': 0,
-            'count_like': 0,
             'id': 1,
             'rating': 5,
         }

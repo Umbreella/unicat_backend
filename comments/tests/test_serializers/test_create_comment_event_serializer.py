@@ -12,7 +12,7 @@ from ...serializers.CreateCommentSerializer import CreateCommentSerializer
 
 
 class CreateCommentEventSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -69,7 +69,7 @@ class CreateCommentEventSerializerTestCase(TestCase):
         expected_raise = {
             'commented_id': [
                 ErrorDetail(**{
-                    'string': 'This is not global Id.',
+                    'string': 'Not valid value.',
                     'code': 'invalid',
                 }),
             ],
@@ -122,7 +122,6 @@ class CreateCommentEventSerializerTestCase(TestCase):
             'body': 'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq',
             'commented_id': 1,
             'commented_type': 2,
-            'count_like': 0,
             'id': 1,
             'rating': None
         }

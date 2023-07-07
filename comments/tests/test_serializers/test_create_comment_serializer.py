@@ -11,7 +11,7 @@ from ...serializers.CreateCommentSerializer import CreateCommentSerializer
 
 
 class CreateCommentSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -33,7 +33,7 @@ class CreateCommentSerializerTestCase(TestCase):
 
     def test_Should_IncludeDefiniteFieldsFromCommentModel(self):
         expected_fields = [
-            'id', 'body', 'createdAt', 'countLike', 'commented_id', 'author'
+            'id', 'body', 'createdAt', 'commented_id', 'author'
         ]
         real_fields = list(self.tested_class().get_fields())
 
@@ -44,7 +44,6 @@ class CreateCommentSerializerTestCase(TestCase):
             'id': IntegerField,
             'body': CharField,
             'createdAt': DateTimeField,
-            'countLike': IntegerField,
             'commented_id': CharField,
             'author': CharField,
         }
@@ -52,7 +51,6 @@ class CreateCommentSerializerTestCase(TestCase):
             key: value.__class__
             for key, value in self.tested_class().get_fields().items()
         }
-        self.maxDiff = None
 
         self.assertEqual(expected_fields, real_fields)
 
@@ -148,7 +146,6 @@ class CreateCommentSerializerTestCase(TestCase):
             'id': None,
             'body': 'qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq',
             'createdAt': timezone.now().strftime(self.date_format),
-            'countLike': 0,
             'author': 'qqqqqqqqqq@q.qq',
         }
         real_data = serializer.data

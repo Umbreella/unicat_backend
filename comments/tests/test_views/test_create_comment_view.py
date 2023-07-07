@@ -14,10 +14,10 @@ from ...views.CreateCommentView import CreateCommentView
         'remove': [
             'users.middleware.CookiesMiddleware.CookiesMiddleware',
         ],
-    }
+    },
 )
 class CreateCommentViewTestCase(APITestCase, URLPatternsTestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     urlpatterns = [
         path('', CreateCommentView.as_view(), name='comments'),

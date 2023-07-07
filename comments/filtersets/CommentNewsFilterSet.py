@@ -1,8 +1,8 @@
 from django_filters import CharFilter
 from graphql import GraphQLError
+from graphql_relay import from_global_id
 
 from events.schema.NewType import NewType
-from unicat.graphql.functions import get_id_from_value
 
 from ..models.CommentedTypeChoices import CommentedTypeChoices
 from .CommentFilterSet import CommentFilterSet
@@ -12,11 +12,10 @@ class CommentNewsFilterSet(CommentFilterSet):
     news_id = CharFilter(method='news_comments')
 
     def news_comments(self, queryset, name, value):
-        try:
-            news_id = get_id_from_value(NewType, value)
-        except Exception as ex:
-            detail = f'news_id: {ex}'
-            raise GraphQLError(detail)
+        type_, news_id = from_global_id(value)
+
+        if type_ != NewType.__name__:
+            raise GraphQLError('news_id: not valid value.')
 
         lookup = {
             'commented_type': CommentedTypeChoices.NEWS.value,

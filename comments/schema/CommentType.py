@@ -28,8 +28,13 @@ class CommentType(DjangoObjectType):
     class Meta:
         model = Comment
         interfaces = (relay.Node,)
-        fields = '__all__'
+        fields = (
+            'id', 'author', 'body', 'created_at', 'rating',
+        )
         connection_class = CountableConnectionBase
+
+    def resolve_author(self, info):
+        return info.context.loaders.user_loader.load(self.author_id)
 
     def resolve_created_at(self, info):
         return self.created_at.strftime('%d.%m.%Y')

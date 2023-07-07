@@ -5,7 +5,7 @@ from ...serializers.CommentSerializer import CommentSerializer
 
 
 class CommentSerializerTestCase(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

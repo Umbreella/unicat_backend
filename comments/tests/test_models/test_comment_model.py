@@ -1,5 +1,4 @@
 from copy import copy
-from decimal import Decimal
 
 from django.core.exceptions import ValidationError
 from django.db.models import (BigAutoField, DateTimeField, ForeignKey,
@@ -22,7 +21,7 @@ from ...models.CommentedTypeChoices import CommentedTypeChoices
 
 
 class CategoryModelTest(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -46,7 +45,6 @@ class CategoryModelTest(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -101,8 +99,8 @@ class CategoryModelTest(TestCase):
 
     def test_Should_IncludeRequiredFields(self):
         expected_fields = [
-            'id', 'author', 'body', 'created_at', 'count_like',
-            'commented_type', 'commented_id', 'rating',
+            'id', 'author', 'body', 'created_at', 'commented_type',
+            'commented_id', 'rating',
         ]
         real_fields = [
             field.name for field in self.tested_class._meta.get_fields()
@@ -116,7 +114,6 @@ class CategoryModelTest(TestCase):
             'author': ForeignKey,
             'body': TextField,
             'created_at': DateTimeField,
-            'count_like': PositiveSmallIntegerField,
             'commented_type': SmallIntegerField,
             'commented_id': PositiveBigIntegerField,
             'rating': PositiveSmallIntegerField,
@@ -127,6 +124,26 @@ class CategoryModelTest(TestCase):
         }
 
         self.assertEqual(expected_fields, real_fields)
+
+    def test_Should_HelpTextForEachField(self):
+        expected_help_text = {
+            'id': '',
+            'author': 'The user who wrote the comment.',
+            'body': 'The text of the comment itself.',
+            'commented_id': (
+                'ID of the object for which the comment is written.'
+            ),
+            'commented_type': '',
+            'created_at': 'Date the comment was written.',
+            'rating': 'The rating set by the user along with the comment.',
+        }
+
+        real_help_text = {
+            field.name: field.help_text
+            for field in self.tested_class._meta.get_fields()
+        }
+
+        self.assertEqual(expected_help_text, real_help_text)
 
     def test_Should_IndexesInCommentTable(self):
         expected_indexes = [
@@ -251,14 +268,10 @@ class CategoryModelTest(TestCase):
         expected_created_at = timezone.now().strftime(self.date_format)
         real_created_at = comment.created_at.strftime(self.date_format)
 
-        expected_count_like = 0
-        real_count_like = comment.count_like
-
         expected_rating = None
         real_rating = comment.rating
 
         self.assertEqual(expected_created_at, real_created_at)
-        self.assertEqual(expected_count_like, real_count_like)
         self.assertEqual(expected_rating, real_rating)
 
     def test_When_AllDataIsValid_Should_SaveNewAndReturnTitleAsStr(self):
@@ -267,8 +280,10 @@ class CategoryModelTest(TestCase):
         comment = self.tested_class(**data)
         comment.save()
 
-        expected_str = f'{comment.created_at} | {comment.commented_type}:' \
-                       f'{comment.commented_id} - {comment.author}'
+        expected_str = (
+            f'{comment.created_at} | {comment.commented_type}:'
+            f' {comment.commented_id} - {comment.author}'
+        )
         real_str = str(comment)
 
         self.assertEqual(expected_str, real_str)
@@ -280,7 +295,6 @@ class CategoryModelTest(TestCase):
         course_stat_before_save = copy(course_stat.__dict__)
         course_stat_before_save.update({
             '_prefetched_objects_cache': {},
-            'avg_rating': Decimal(f'{5}.0'),
             'count_comments': 1,
             'count_five_rating': 1,
         })
@@ -306,7 +320,6 @@ class CategoryModelTest(TestCase):
         course_stat_before_delete = copy(course_stat.__dict__)
         course_stat_before_delete.update({
             '_prefetched_objects_cache': {},
-            'avg_rating': Decimal('0.0'),
             'count_comments': 0,
             'count_five_rating': 0,
         })
@@ -331,7 +344,6 @@ class CategoryModelTest(TestCase):
         course_stat_before_save = copy(course_stat.__dict__)
         course_stat_before_save.update({
             '_prefetched_objects_cache': {},
-            'avg_rating': Decimal('4.0'),
             'count_comments': 1,
             'count_four_rating': 1,
         })
@@ -360,7 +372,6 @@ class CategoryModelTest(TestCase):
         course_stat_before_delete = copy(course_stat.__dict__)
         course_stat_before_delete.update({
             '_prefetched_objects_cache': {},
-            'avg_rating': Decimal('0.0'),
             'count_comments': 0,
             'count_four_rating': 0,
         })
@@ -385,7 +396,6 @@ class CategoryModelTest(TestCase):
         course_stat_before_save = copy(course_stat.__dict__)
         course_stat_before_save.update({
             '_prefetched_objects_cache': {},
-            'avg_rating': Decimal('3.0'),
             'count_comments': 1,
             'count_three_rating': 1,
         })
@@ -414,7 +424,6 @@ class CategoryModelTest(TestCase):
         course_stat_before_delete = copy(course_stat.__dict__)
         course_stat_before_delete.update({
             '_prefetched_objects_cache': {},
-            'avg_rating': Decimal('0.0'),
             'count_comments': 0,
             'count_three_rating': 0,
         })
@@ -439,7 +448,6 @@ class CategoryModelTest(TestCase):
         course_stat_before_save = copy(course_stat.__dict__)
         course_stat_before_save.update({
             '_prefetched_objects_cache': {},
-            'avg_rating': Decimal('2.0'),
             'count_comments': 1,
             'count_two_rating': 1,
         })
@@ -468,7 +476,6 @@ class CategoryModelTest(TestCase):
         course_stat_before_delete = copy(course_stat.__dict__)
         course_stat_before_delete.update({
             '_prefetched_objects_cache': {},
-            'avg_rating': Decimal('0.0'),
             'count_comments': 0,
             'count_two_rating': 0,
         })
@@ -493,7 +500,6 @@ class CategoryModelTest(TestCase):
         course_stat_before_save = copy(course_stat.__dict__)
         course_stat_before_save.update({
             '_prefetched_objects_cache': {},
-            'avg_rating': Decimal('1.0'),
             'count_comments': 1,
             'count_one_rating': 1,
         })
@@ -522,7 +528,6 @@ class CategoryModelTest(TestCase):
         course_stat_before_delete = copy(course_stat.__dict__)
         course_stat_before_delete.update({
             '_prefetched_objects_cache': {},
-            'avg_rating': Decimal('0.0'),
             'count_comments': 0,
             'count_one_rating': 0,
         })

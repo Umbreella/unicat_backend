@@ -11,7 +11,7 @@ from ...models.CommentedTypeChoices import CommentedTypeChoices
 
 
 class CommentFilterSetTest(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):

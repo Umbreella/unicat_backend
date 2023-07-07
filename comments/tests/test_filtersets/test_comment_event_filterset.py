@@ -6,8 +6,6 @@ from courses.models.Course import Course
 from courses.models.LearningFormat import LearningFormat
 from events.models.Event import Event
 from events.models.New import New
-from events.schema.EventType import EventType
-from unicat.graphql.functions import get_id_from_value
 from users.models import User
 from users.models.Teacher import Teacher
 
@@ -18,7 +16,7 @@ from ...models.CommentedTypeChoices import CommentedTypeChoices
 
 
 class CommentEventFilterSetTest(TestCase):
-    databases = {'master'}
+    databases = {'master', }
 
     @classmethod
     def setUpTestData(cls):
@@ -42,7 +40,6 @@ class CommentEventFilterSetTest(TestCase):
             'teacher': teacher,
             'title': 'q' * 50,
             'price': 50.0,
-            'discount': None,
             'count_lectures': 50,
             'count_independents': 50,
             'duration': 50,
@@ -155,13 +152,10 @@ class CommentEventFilterSetTest(TestCase):
         }
         base_queryset = Comment.objects.all()
 
-        with self.assertRaises(Exception) as expected_raise:
-            get_id_from_value(EventType, data['event_id'])
-
         with self.assertRaises(Exception) as real_raise:
             self.tested_class(data=data, queryset=base_queryset).qs
 
-        expected_exception = f'event_id: {expected_raise.exception}'
+        expected_exception = 'event_id: not valid value.'
         real_exception = str(real_raise.exception)
 
         self.assertEqual(expected_exception, real_exception)
