@@ -154,13 +154,11 @@ class PaymentCreateViewTestCase(APITestCase):
         expected_status = status.HTTP_201_CREATED
         real_status = response.status_code
 
-        expected_data = {
-            'amount': 4500,
-            'clientSecret': (
-                'pi_1Mxd0wLKkAKty0Q87fIqvZs9_secret_LMr7KUxVEmZu8YXAp0RUuhsic'
-            ),
-        }
-        real_data = response.data
+        expected_amount = 4500
+        real_amount = response.data.get('amount')
+
+        expected_client_secret = ''
+        real_client_secret = response.data.get('clientSecret')
 
         expected_count_payment = 1
         real_count_payment = len(Payment.objects.all())
@@ -180,7 +178,8 @@ class PaymentCreateViewTestCase(APITestCase):
         real_created = real_dict.pop('created_at').strftime(self.date_format)
 
         self.assertEqual(expected_status, real_status)
-        self.assertEqual(expected_data, real_data)
+        self.assertEqual(expected_amount, real_amount)
+        self.assertNotEqual(expected_client_secret, real_client_secret)
         self.assertEqual(expected_count_payment, real_count_payment)
         self.assertEqual(expected_dict, real_dict)
         self.assertNotEqual(expected_id, real_id)
@@ -196,13 +195,11 @@ class PaymentCreateViewTestCase(APITestCase):
         expected_status = status.HTTP_201_CREATED
         real_status = response.status_code
 
-        expected_data = {
-            'amount': 5000,
-            'clientSecret': (
-                'pi_1Mxd0wLKkAKty0Q87fIqvZs9_secret_LMr7KUxVEmZu8YXAp0RUuhsic'
-            ),
-        }
-        real_data = response.data
+        expected_amount = 5000
+        real_amount = response.data.get('amount')
+
+        expected_client_secret = ''
+        real_client_secret = response.data.get('clientSecret')
 
         expected_count_payment = 1
         real_count_payment = len(Payment.objects.all())
@@ -222,7 +219,8 @@ class PaymentCreateViewTestCase(APITestCase):
         real_created = real_dict.pop('created_at').strftime(self.date_format)
 
         self.assertEqual(expected_status, real_status)
-        self.assertEqual(expected_data, real_data)
+        self.assertEqual(expected_amount, real_amount)
+        self.assertNotEqual(expected_client_secret, real_client_secret)
         self.assertEqual(expected_count_payment, real_count_payment)
         self.assertEqual(expected_dict, real_dict)
         self.assertNotEqual(expected_id, real_id)

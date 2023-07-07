@@ -248,6 +248,29 @@ class UserAttemptTestCase(TestCase):
 
         self.assertEqual(expected_completed_at, real_completed_at)
 
+    def test_When_LessonIsCompletedAndAttemptIsSuccess_Should_DontUpdateLesson(
+            self):
+        time_now = timezone.now()
+
+        self.user_lesson_without_time_limit.completed_at = time_now
+        self.user_lesson_without_time_limit.save()
+
+        data = self.data_without_time_limit
+
+        user_attempt = self.tested_class(**data)
+        user_attempt.save()
+
+        user_attempt.count_true_answer = 10
+        user_attempt.save()
+
+        user_lesson = user_attempt.user_lesson
+        user_lesson.refresh_from_db()
+
+        expected_completed_at = time_now.date().strftime(self.date_format)
+        real_completed_at = user_lesson.completed_at.strftime(self.date_format)
+
+        self.assertEqual(expected_completed_at, real_completed_at)
+
     def test_When_CountTrueAnswersGreater60Percent_Should_UpdateUserLesson(
             self):
         data = self.data_without_time_limit
