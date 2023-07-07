@@ -2,7 +2,7 @@
 source = .
 command_line = manage.py test
 omit =
-    ./unicat/*,
+    ./unicat/db_router.py,
     ./venv/*,
     *tests*,
     *apps.py,
@@ -17,7 +17,7 @@ omit =
 
 [report]
 omit =
-    ./unicat/*,
+    ./unicat/db_router.py,
     ./venv/*,
     *tests*,
     *apps.py,

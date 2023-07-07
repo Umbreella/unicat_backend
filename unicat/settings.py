@@ -3,6 +3,7 @@ import sys
 from datetime import timedelta
 from pathlib import Path
 
+import stripe
 from dotenv import dotenv_values
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -19,11 +20,21 @@ if 'test' in sys.argv:
     config = {
         **dotenv_values('.env.test.local')
     }
+    stripe.api_base = config.get('DJANGO_APP_STRIPE_LOCAL_API')
+    CELERY_TASK_ALWAYS_EAGER = True
 
-SECRET_KEY = config['DJANGO_APP_SECRET_KEY']
+CELERY_TASK_ALWAYS_EAGER = True
 
-DEBUG = int(config['DJANGO_APP_DEBUG'])
+TEST_RUNNER = 'snapshottest.django.TestRunner'
 
+stripe.api_key = config.get('DJANGO_APP_STRIPE_SECRET_KEY')
+STRIPE_WEBHOOK_SECRET = config.get('DJANGO_APP_STRIPE_WEBHOOK_SECRET')
+
+SECRET_KEY = config.get('DJANGO_APP_SECRET_KEY')
+
+DEBUG = int(config.get('DJANGO_APP_DEBUG'))
+
+MAIN_HOST = config.get('DJANGO_APP_MAIN_HOST')
 ALLOWED_HOSTS = config.get('DJANGO_APP_ALLOWED_HOSTS').split(' ')
 
 AUTH_USER_MODEL = 'users.User'
@@ -40,6 +51,7 @@ INSTALLED_APPS = [
 
     'aldjemy',
     'corsheaders',
+    'django_celery_results',
     'django_filters',
     'django_prometheus',
     'django_summernote',
@@ -53,6 +65,10 @@ INSTALLED_APPS = [
     'courses',
     'comments',
     'events',
+    'feedbacks',
+    'lessons',
+    'resources',
+    'payments',
     'users',
 ]
 
@@ -92,57 +108,65 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'unicat.wsgi.application'
-ASGI_APPLICATION = 'unicat.asgi.application'
 
 DATABASES = {
     'default': {},
     'master': {
-        'ENGINE': config['DJANGO_APP_DATABASE_SQL_ENGINE'],
-        'NAME': config['DJANGO_APP_DATABASE_SQL_MASTER_DATABASE'],
-        'USER': config['DJANGO_APP_DATABASE_SQL_MASTER_USER'],
-        'PASSWORD': config['DJANGO_APP_DATABASE_SQL_MASTER_PASSWORD'],
-        'HOST': config['DJANGO_APP_DATABASE_SQL_MASTER_HOST'],
-        'PORT': config['DJANGO_APP_DATABASE_SQL_MASTER_PORT'],
+        'ENGINE': config.get('DJANGO_APP_DATABASE_SQL_ENGINE'),
+        'NAME': config.get('DJANGO_APP_DATABASE_SQL_MASTER_DATABASE'),
+        'USER': config.get('DJANGO_APP_DATABASE_SQL_MASTER_USER'),
+        'PASSWORD': config.get('DJANGO_APP_DATABASE_SQL_MASTER_PASSWORD'),
+        'HOST': config.get('DJANGO_APP_DATABASE_SQL_MASTER_HOST'),
+        'PORT': config.get('DJANGO_APP_DATABASE_SQL_MASTER_PORT'),
         'TEST': {
             'DEPENDENCIES': [],
         },
+        'ATOMIC_REQUESTS': True,
     },
     'slave': {
-        'ENGINE': config['DJANGO_APP_DATABASE_SQL_ENGINE'],
-        'NAME': config['DJANGO_APP_DATABASE_SQL_REPLICA_DATABASE'],
-        'USER': config['DJANGO_APP_DATABASE_SQL_REPLICA_USER'],
-        'PASSWORD': config['DJANGO_APP_DATABASE_SQL_REPLICA_PASSWORD'],
-        'HOST': config['DJANGO_APP_DATABASE_SQL_REPLICA_HOST'],
-        'PORT': config['DJANGO_APP_DATABASE_SQL_REPLICA_PORT'],
+        'ENGINE': config.get('DJANGO_APP_DATABASE_SQL_ENGINE'),
+        'NAME': config.get('DJANGO_APP_DATABASE_SQL_REPLICA_DATABASE'),
+        'USER': config.get('DJANGO_APP_DATABASE_SQL_REPLICA_USER'),
+        'PASSWORD': config.get('DJANGO_APP_DATABASE_SQL_REPLICA_PASSWORD'),
+        'HOST': config.get('DJANGO_APP_DATABASE_SQL_REPLICA_HOST'),
+        'PORT': config.get('DJANGO_APP_DATABASE_SQL_REPLICA_PORT'),
     },
 }
 
-DATABASE_ROUTERS = [config['DJANGO_APP_DATABASE_ROUTER']]
+DATABASE_ROUTERS = (config.get('DJANGO_APP_DATABASE_ROUTER'),)
 
 CACHES = {
     'default': {
-        'BACKEND': config['DJANGO_APP_CACHES_BACKEND'],
-        'LOCATION': config['DJANGO_APP_CACHES_LOCATION'],
+        'BACKEND': config.get('DJANGO_APP_CACHES_BACKEND'),
+        'LOCATION': config.get('DJANGO_APP_CACHES_LOCATION'),
         'TIMEOUT': 3600,
     }
 }
 
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_BROKER_URL = config.get('CELERY_BROKER_URL')
+
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation'
-                '.UserAttributeSimilarityValidator',
+        'NAME': (
+            'django.contrib.auth.password_validation'
+            '.UserAttributeSimilarityValidator'
+        ),
     },
     {
-        'NAME': 'django.contrib.auth.password_validation'
-                '.MinimumLengthValidator',
+        'NAME': (
+            'django.contrib.auth.password_validation.MinimumLengthValidator'
+        ),
     },
     {
-        'NAME': 'django.contrib.auth.password_validation'
-                '.CommonPasswordValidator',
+        'NAME': (
+            'django.contrib.auth.password_validation.CommonPasswordValidator'
+        ),
     },
     {
-        'NAME': 'django.contrib.auth.password_validation'
-                '.NumericPasswordValidator',
+        'NAME': (
+            'django.contrib.auth.password_validation.NumericPasswordValidator'
+        ),
     },
 ]
 
@@ -165,7 +189,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
+    'DEFAULT_PAGINATION_CLASS': (
+        'unicat.rest.pagination.DynamicPagination.DynamicPagination'
+    ),
 }
 
 SIMPLE_JWT = {
@@ -173,7 +200,7 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,
-    'UPDATE_LAST_LOGIN': False,
+    'UPDATE_LAST_LOGIN': True,
 
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
@@ -187,8 +214,6 @@ SIMPLE_JWT = {
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
-    'USER_AUTHENTICATION_RULE': 'rest_framework_simplejwt.authentication.'
-                                'default_user_authentication_rule',
 
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
     'TOKEN_TYPE_CLAIM': 'token_type',
@@ -219,6 +244,7 @@ CORS_ALLOWED_ORIGINS = config.get('DJANGO_APP_CORS_ALLOWED_ORIGINS').split(' ')
 CORS_ALLOW_METHODS = [
     'DELETE',
     'GET',
+    'OPTIONS',
     'PATCH',
     'POST',
     'PUT',
@@ -228,6 +254,7 @@ CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
     'access-control-allow-credentials',
+    'access-control-expose-headers',
     'authorization',
     'content-type',
     'dnt',
@@ -235,6 +262,7 @@ CORS_ALLOW_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+    'stripe-signature',
 ]
 
 SUMMERNOTE_CONFIG = {
@@ -244,13 +272,41 @@ SUMMERNOTE_CONFIG = {
 GRAPHENE = {
     'SCHEMA': 'unicat.graphql.schema.schema',
     'MIDDLEWARE': [
-        'unicat.middleware.loader_middleware.LoaderMiddleware',
-    ]
+        'graphql_jwt.middleware.JSONWebTokenMiddleware',
+        'unicat.middleware.LoaderMiddleware.LoaderMiddleware',
+    ],
+    'TESTING_ENDPOINT': '/graphql/',
 }
 
-if DEBUG:
-    GRAPHENE['MIDDLEWARE'] += ['graphene_django.debug.DjangoDebugMiddleware', ]
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'graphql_jwt.backends.JSONWebTokenBackend',
+]
 
+GRAPHQL_JWT = {
+    'JWT_ALLOW_ANY_HANDLER': 'unicat.graphql.functions.allow_any',
+    'JWT_ALGORITHM': SIMPLE_JWT.get('ALGORITHM'),
+    'JWT_AUTH_HEADER_PREFIX': SIMPLE_JWT.get('AUTH_HEADER_TYPES')[0],
+    'JWT_AUTH_HEADER_NAME': SIMPLE_JWT.get('AUTH_HEADER_NAME'),
+    'JWT_SECRET_KEY': SIMPLE_JWT.get('SIGNING_KEY'),
+    'JWT_VERIFY_EXPIRATION': True,
+    'JWT_EXPIRATION_DELTA': timedelta(days=365),
+    'JWT_DECODE_HANDLER': 'unicat.graphql.functions.jwt_decode',
+    'JWT_PAYLOAD_GET_USERNAME_HANDLER': (
+        'unicat.graphql.functions.get_username_by_payload'
+    ),
+    'JWT_GET_USER_BY_NATURAL_KEY_HANDLER': (
+        'unicat.graphql.functions.get_user_by_natural_key'
+    ),
+}
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = config.get('DJANGO_APP_EMAIL_HOST')
+EMAIL_PORT = config.get('DJANGO_APP_EMAIL_PORT')
+EMAIL_HOST_USER = config.get('DJANGO_APP_EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config.get('DJANGO_APP_EMAIL_HOST_PASSWORD')
+
+if DEBUG:
     LOGGING = {
         'version': 1,
         'disable_existing_loggers': False,

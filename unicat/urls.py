@@ -21,37 +21,40 @@ from django.views.decorators.csrf import csrf_exempt
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from graphene_django.views import GraphQLView
-from graphql_sync_dataloaders import DeferredExecutionContext as GqlContext
+from graphql_sync_dataloaders import DeferredExecutionContext
 from rest_framework import permissions
 
 schema_view = get_schema_view(
     openapi.Info(
-        title="Snippets API",
+        title='Snippets API',
         default_version='v1',
-        description="Test description",
+        description='Test description',
     ),
     public=True,
-    permission_classes=[permissions.AllowAny],
+    permission_classes=[permissions.AllowAny, ],
 )
 
 urlpatterns = [
-    path('prometheus/', include('django_prometheus.urls')),
-
     path('api/admin/', admin.site.urls),
     path('api/user/', include('users.urls')),
-    path('api/course/', include('courses.urls')),
+    path('api/courses/', include('courses.urls')),
+    path('api/events/', include('events.urls')),
     path('api/comments/', include('comments.urls')),
+    path('api/lessons/', include('lessons.urls')),
+    path('api/payments/', include('payments.urls')),
+    path('api/resources/', include('resources.urls')),
+    path('api/feedbacks/', include('feedbacks.urls')),
 
     path('api/docs/', schema_view.with_ui('swagger', cache_timeout=0),
          name='schema-swagger-ui'),
 
-    path("graphql",
-         csrf_exempt(GraphQLView.as_view(graphiql=False,
-                                         execution_context_class=GqlContext
-                                         )),
-         name='graphql'),
-    path("graphql/docs", GraphQLView.as_view(graphiql=True)),
+    path('graphql/', csrf_exempt(GraphQLView.as_view(**{
+        'graphiql': False,
+        'execution_context_class': DeferredExecutionContext,
+    })), name='graphql'),
+    path('graphql/docs/', GraphQLView.as_view(graphiql=True)),
 
+    path('prometheus/', include('django_prometheus.urls')),
     path('summernote/', include('django_summernote.urls')),
 ]
 

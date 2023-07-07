@@ -1,40 +1,28 @@
-from collections import defaultdict
-
-from graphql_sync_dataloaders import SyncDataLoader
-
-from courses.models.Course import Course
-from users.models.Teacher import Teacher
+from courses.loaders.CategoryLoader import CategoryLoader
+from courses.loaders.CertificateTitleLoader import CertificateTitleLoader
+from courses.loaders.CourseBodyLoader import CourseBodyLoader
+from courses.loaders.DiscountLoader import DiscountLoader
+from courses.loaders.UserProgressLoader import UserProgressLoader
+from lessons.loaders.AnswerValueLoader import AnswerValueLoader
+from lessons.loaders.PrivateChildrenLessonLoader import \
+    PrivateChildrenLessonLoader
+from lessons.loaders.PublicChildrenLessonLoader import \
+    PublicChildrenLessonLoader
+from lessons.loaders.UserLessonLoader import UserLessonLoader
+from users.loaders.TeacherLoader import TeacherLoader
+from users.loaders.UserLoader import UserLoader
 
 
 class Loaders:
     def __init__(self):
-        self.user_loader = SyncDataLoader(generate_loader_by_foreign_key)
-        self.teacher_by_course = SyncDataLoader(batch_teacher_by_course_loader)
-
-
-def generate_loader_by_foreign_key(keys):
-    results_by_ids = defaultdict(list)
-    lookup = {'category_id__in': keys}
-
-    data = Course.objects.filter(**lookup).iterator()
-
-    for result in data:
-        results_by_ids[getattr(result, 'category_id')].append(result)
-
-    return [results_by_ids.get(id, []) for id in keys]
-
-
-def batch_teacher_by_course_loader(keys):
-    results_by_ids = defaultdict(list)
-    lookup = {'id__in': keys}
-
-    data = Teacher.objects \
-        .select_related('user') \
-        .filter(**lookup) \
-        .values('id', 'photo') \
-        .iterator()
-
-    for result in data:
-        results_by_ids[result.get('id')].append(Teacher(**result))
-
-    return [results_by_ids.get(key, []) for key in keys]
+        self.category_loader = CategoryLoader()
+        self.course_body_loader = CourseBodyLoader()
+        self.discount_loader = DiscountLoader()
+        self.user_progress_loader = UserProgressLoader()
+        self.user_loader = UserLoader()
+        self.teacher_loader = TeacherLoader()
+        self.certificate_loader = CertificateTitleLoader()
+        self.public_children_loader = PublicChildrenLessonLoader()
+        self.private_children_loader = PrivateChildrenLessonLoader()
+        self.user_lesson_loader = UserLessonLoader()
+        self.answer_value_loader = AnswerValueLoader()

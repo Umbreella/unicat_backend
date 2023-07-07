@@ -12,6 +12,8 @@ htmlcov/
 .tox/
 .coverage
 .cache
+.flake8
+.pre-commit-config.yaml
 nosetests.xml
 coverage.xml
 
@@ -25,8 +27,3 @@ local_settings.py
 db.sqlite3
 static/
 media/
-
-
-/.coveragerc
-/.flake8
-/.pre-commit-config.yaml
