@@ -6,7 +6,7 @@ from unittest import TestCase
 class CountFileTestCase(TestCase):
     def test_Should_TestsForEachModule(self):
         exclude_dirs = (
-            '__pycache__', 'migrations', 'tests',
+            '__pycache__', 'migrations', 'tests', 'templates',
         )
 
         dir_tests, _ = os.path.split(inspect.getfile(self.__class__))
