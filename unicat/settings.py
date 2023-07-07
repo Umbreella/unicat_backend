@@ -23,8 +23,6 @@ if 'test' in sys.argv:
     stripe.api_base = config.get('DJANGO_APP_STRIPE_LOCAL_API')
     CELERY_TASK_ALWAYS_EAGER = True
 
-CELERY_TASK_ALWAYS_EAGER = True
-
 TEST_RUNNER = 'snapshottest.django.TestRunner'
 
 stripe.api_key = config.get('DJANGO_APP_STRIPE_SECRET_KEY')
@@ -33,6 +31,8 @@ STRIPE_WEBHOOK_SECRET = config.get('DJANGO_APP_STRIPE_WEBHOOK_SECRET')
 SECRET_KEY = config.get('DJANGO_APP_SECRET_KEY')
 
 DEBUG = int(config.get('DJANGO_APP_DEBUG'))
+
+CELERY_TASK_ALWAYS_EAGER = DEBUG
 
 MAIN_HOST = config.get('DJANGO_APP_MAIN_HOST')
 ALLOWED_HOSTS = config.get('DJANGO_APP_ALLOWED_HOSTS').split(' ')

@@ -17,7 +17,7 @@ htmlcov/
 nosetests.xml
 coverage.xml
 
-### Django ###
+# Django
 *.log
 *.pot
 *.pyc
