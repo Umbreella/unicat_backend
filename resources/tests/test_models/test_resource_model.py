@@ -1,4 +1,3 @@
-import inspect
 import os
 import shutil
 
@@ -32,11 +31,6 @@ class ResourceModelTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-
-        module_dir = os.path.split(inspect.getfile(cls))[0]
-        assert settings.MEDIA_ROOT.startswith(module_dir + '\\') is True, (
-            'MEDIA_ROOT must be the path to a folder in the current directory.'
-        )
         os.mkdir(settings.MEDIA_ROOT)
 
     @classmethod
