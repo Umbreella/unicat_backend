@@ -1,3 +1,4 @@
+import math
 from datetime import datetime
 
 import jwt
@@ -14,7 +15,7 @@ def get_timeout_seconds(time_end: datetime) -> int:
     timeout = time_end - timezone.now()
     timeout_total_seconds = timeout.total_seconds()
 
-    return int(timeout_total_seconds)
+    return int(math.ceil(timeout_total_seconds))
 
 
 def allow_any(info, **kwargs):

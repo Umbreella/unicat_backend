@@ -1,6 +1,4 @@
 [flake8]
-#extend-ignore =
-
 inline-quotes = single
 
 exclude =
@@ -10,5 +8,6 @@ exclude =
     */snapshots/*
     users/models/__init__.py
     manage.py
+    venv/*,
 
 max-complexity = 10
