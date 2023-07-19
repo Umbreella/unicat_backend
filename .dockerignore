@@ -1,6 +1,8 @@
 # IDE
 /.idea
 
+/.*
+
 # misc
 .env.local
 .env.development.local
@@ -27,3 +29,4 @@ local_settings.py
 db.sqlite3
 static/
 media/
+/README.md
