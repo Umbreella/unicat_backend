@@ -7,10 +7,10 @@ from django.template.loader import render_to_string
 
 
 @shared_task(base=Singleton)
-def send_confirm_email_task(user_id: int, user_email: str):
+def send_confirm_email_task(user_email: str):
     token = jwt.encode(**{
         'payload': {
-            'user_id': user_id,
+            'user_email': user_email,
         },
         'key': settings.SECRET_KEY,
         'algorithm': 'HS256',

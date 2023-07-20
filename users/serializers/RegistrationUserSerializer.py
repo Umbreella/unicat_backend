@@ -30,7 +30,6 @@ class RegistrationUserSerializer(LoginUserSerializer):
             raise ValidationError(detail)
 
         send_confirm_email_task.apply_async(kwargs={
-            'user_id': user.id,
             'user_email': user.email,
         })
 

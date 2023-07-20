@@ -17,7 +17,6 @@ class SendConfirmEmailTaskTestCase(TestCase):
 
     def test_When_TaskIsCalled_Should_CreateMailForConfirmEmail(self):
         task = self.tested_task.apply_async(kwargs={
-            'user_id': 1,
             'user_email': 'test@test.com',
         })
 
@@ -33,10 +32,10 @@ class SendConfirmEmailTaskTestCase(TestCase):
         real_mail_subject = _mail.subject
 
         expected_token_payload = {
-            'user_id': 1,
+            'user_email': 'test@test.com',
         }
         real_token_payload = jwt.decode(**{
-            'jwt': re.findall(r'\w*[.]\w*[.]\w*', _mail.body)[0],
+            'jwt': re.findall(r'\w*[.].*[.].*', _mail.body)[0],
             'key': settings.SECRET_KEY,
             'algorithms': ['HS256', ],
         })

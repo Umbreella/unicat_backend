@@ -32,7 +32,7 @@ class ConfirmEmailSerializerTestCase(TestCase):
         cls.data = {
             'url': jwt.encode(**{
                 'payload': {
-                    'user_id': 1,
+                    'user_email': 'test@email.com',
                 },
                 'key': settings.SECRET_KEY,
                 'algorithm': 'HS256',
@@ -95,7 +95,7 @@ class ConfirmEmailSerializerTestCase(TestCase):
             'url': [
                 ErrorDetail(**{
                     'string': (
-                        'Ensure this field has at least 99 characters.'
+                        'Ensure this field has at least 100 characters.'
                     ),
                     'code': 'min_length',
                 }),
@@ -108,7 +108,7 @@ class ConfirmEmailSerializerTestCase(TestCase):
     def test_When_DataIsGreaterThanMinLength_Should_ErrorMaxLength(self):
         data = self.data
         data.update({
-            'url': 'q' * 124,
+            'url': 'q' * 256,
         })
 
         serializer = self.tested_class(data=data)
@@ -120,7 +120,7 @@ class ConfirmEmailSerializerTestCase(TestCase):
             'url': [
                 ErrorDetail(**{
                     'string': (
-                        'Ensure this field has no more than 123 characters.'
+                        'Ensure this field has no more than 255 characters.'
                     ),
                     'code': 'max_length',
                 }),
@@ -158,7 +158,7 @@ class ConfirmEmailSerializerTestCase(TestCase):
         data.update({
             'url': jwt.encode(**{
                 'payload': {
-                    'user_id': 3,
+                    'user_email': 'test2@email.com',
                 },
                 'key': settings.SECRET_KEY,
                 'algorithm': 'HS256',
@@ -183,7 +183,7 @@ class ConfirmEmailSerializerTestCase(TestCase):
         data.update({
             'url': jwt.encode(**{
                 'payload': {
-                    'user_id': 2,
+                    'user_email': 'test1@email.com',
                 },
                 'key': settings.SECRET_KEY,
                 'algorithm': 'HS256',

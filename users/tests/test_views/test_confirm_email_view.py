@@ -28,7 +28,7 @@ class UpdatePasswordViewTestCase(APITestCase):
         cls.data = {
             'url': jwt.encode(**{
                 'payload': {
-                    'user_id': 1,
+                    'user_email': 'test@email.com',
                 },
                 'key': settings.SECRET_KEY,
                 'algorithm': 'HS256',

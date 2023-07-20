@@ -10,7 +10,7 @@ from ..tasks.SendConfirmedEmailTask import send_confirmed_email_task
 
 
 class ConfirmEmailSerializer(Serializer):
-    url = CharField(min_length=99, max_length=123)
+    url = CharField(min_length=100, max_length=255)
 
     def validate(self, attrs):
         try:
@@ -29,7 +29,7 @@ class ConfirmEmailSerializer(Serializer):
             self.user = User.objects.using(
                 'master'
             ).get(**{
-                'id': decoded_data['user_id'],
+                'email': decoded_data['user_email'],
             })
         except ObjectDoesNotExist:
             raise AuthenticationFailed('User not found.')
