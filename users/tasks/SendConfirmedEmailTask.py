@@ -7,7 +7,7 @@ from django.template.loader import render_to_string
 
 @shared_task(base=Singleton)
 def send_confirmed_email_task(user_email: str):
-    url = f'{settings.MAIN_HOST}/courses'
+    url = f'{settings.MAIN_HOST}/courses/'
     html = render_to_string('SuccessRegistration.html', {'url': url})
     body = (
         'Hi,',

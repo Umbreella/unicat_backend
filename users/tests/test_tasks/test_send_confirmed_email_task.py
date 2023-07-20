@@ -35,7 +35,7 @@ class SendConfirmEmailTaskTestCase(TestCase):
                 'Now you can start learning!'
             ),
             'Click on the link to view the courses:',
-            '\n\nhttp://localhost:3000/courses\n\n',
+            '\n\nhttp://localhost:3000/courses/\n\n',
         ))
         real_mail_body = _mail.body
 
