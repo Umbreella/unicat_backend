@@ -1,4 +1,8 @@
+import copy
+
+from rest_framework import status
 from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from unicat.permissions.DjModelPermForDRF import DjModelPermForDRF
@@ -22,9 +26,13 @@ class NewView(ModelViewSet):
         return super().list(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
-        request.data._mutable = True
-        request.data.update({
+        data = copy.copy(request.data)
+        data.update({
             'author': request.user.id,
         })
 
-        return super().create(request, *args, **kwargs)
+        serializer = self.serializer_class(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)

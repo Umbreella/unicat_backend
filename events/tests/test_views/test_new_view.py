@@ -192,7 +192,6 @@ class NewViewTestCase(APITestCase):
 
         expected_data = self.serializer(self.queryset.last()).data
         real_data = response.data
-        real_data['preview'] = real_data['preview'][17:]
 
         self.assertEqual(expected_status, real_status)
         self.assertEqual(expected_data, real_data)
