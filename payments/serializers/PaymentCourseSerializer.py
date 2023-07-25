@@ -31,6 +31,14 @@ class PaymentCourseSerializer(serializers.Serializer):
             }
             raise ValidationError(detail)
 
+        if not self.course.is_published:
+            detail = {
+                'course_id': [
+                    'This course in archive.',
+                ],
+            }
+            raise ValidationError(detail)
+
         return {
             'course_id': self.course.id,
         }

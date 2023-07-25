@@ -1,9 +1,9 @@
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import (BigAutoField, CharField, DateTimeField,
-                              DecimalField, ForeignKey, ImageField,
-                              IntegerField, ManyToManyField, ManyToOneRel,
-                              OneToOneRel, PositiveIntegerField,
+from django.db.models import (BigAutoField, BooleanField, CharField,
+                              DateTimeField, DecimalField, ForeignKey,
+                              ImageField, IntegerField, ManyToManyField,
+                              ManyToOneRel, OneToOneRel, PositiveIntegerField,
                               PositiveSmallIntegerField)
 from django.test import TestCase
 from django.utils import timezone
@@ -58,7 +58,7 @@ class CourseModelTestCase(TestCase):
             'payments', 'id', 'teacher', 'category', 'title', 'price',
             'count_lectures', 'count_independents', 'count_listeners',
             'duration', 'learning_format', 'preview', 'short_description',
-            'avg_rating', 'created_at', 'listeners',
+            'avg_rating', 'created_at', 'is_published', 'listeners',
         ]
         real_fields = [
             field.name for field in self.tested_class._meta.get_fields()
@@ -88,6 +88,7 @@ class CourseModelTestCase(TestCase):
             'preview': ImageField,
             'short_description': CharField,
             'created_at': DateTimeField,
+            'is_published': BooleanField,
             'listeners': ManyToManyField,
         }
         real_fields = {
@@ -121,6 +122,7 @@ class CourseModelTestCase(TestCase):
                 'Count listeners in course, calculated automatically.'
             ),
             'created_at': 'Course creation time.',
+            'is_published': 'Course is published.',
             'listeners': 'All students of the course.',
             'course_body': '',
             'discounts': '',

@@ -31,7 +31,7 @@ class PaymentCourseSerializerTestCase(TestCase):
             'title': 'q' * 50,
         })
 
-        Course.objects.create(**{
+        cls.course = Course.objects.create(**{
             'id': 1,
             'teacher': teacher,
             'title': 'q' * 50,
@@ -43,6 +43,7 @@ class PaymentCourseSerializerTestCase(TestCase):
             'category': category,
             'preview': 'temporary_img',
             'short_description': 'q' * 50,
+            'is_published': True,
         })
 
         cls.data = {
@@ -177,6 +178,29 @@ class PaymentCourseSerializerTestCase(TestCase):
             'course_id': [
                 ErrorDetail(**{
                     'string': 'This course is not found.',
+                    'code': 'invalid',
+                }),
+            ],
+        }
+        real_raise = _raise.exception.detail
+
+        self.assertEqual(expected_raise, real_raise)
+
+    def test_When_CourseIdInArchive_Should_ErrorInArchive(self):
+        self.course.is_published = False
+        self.course.save()
+
+        data = self.data
+
+        serializer = self.tested_class(data=data)
+
+        with self.assertRaises(ValidationError) as _raise:
+            serializer.is_valid(raise_exception=True)
+
+        expected_raise = {
+            'course_id': [
+                ErrorDetail(**{
+                    'string': 'This course in archive.',
                     'code': 'invalid',
                 }),
             ],

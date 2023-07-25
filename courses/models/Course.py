@@ -71,6 +71,10 @@ class Course(models.Model):
         'default': timezone.now,
         'help_text': 'Course creation time.',
     })
+    is_published = models.BooleanField(**{
+        'default': False,
+        'help_text': 'Course is published.',
+    })
 
     def __str__(self):
         return f'{self.title}'

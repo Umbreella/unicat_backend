@@ -63,6 +63,7 @@ class CourseTypeTestCase(GraphQLTestCase):
             'category': first_category,
             'preview': 'temporary_img',
             'short_description': 'q' * 50,
+            'is_published': True,
         })
 
         Course.objects.create(**{
@@ -279,11 +280,6 @@ class CourseTypeTestCase(GraphQLTestCase):
                                 'id': 'Q291cnNlVHlwZTox',
                             },
                         },
-                        {
-                            'node': {
-                                'id': 'Q291cnNlVHlwZToy',
-                            },
-                        },
                     ],
                 },
             },
@@ -422,16 +418,6 @@ class CourseTypeTestCase(GraphQLTestCase):
                                     ),
                                 },
                                 'progress': 0.0,
-                            },
-                        },
-                        {
-                            'node': {
-                                'id': 'Q291cnNlVHlwZToy',
-                                'teacher': {'id': 'VGVhY2hlclR5cGU6MQ==', },
-                                'category': {'id': 'Q2F0ZWdvcnlUeXBlOjI=', },
-                                'body': None,
-                                'discount': None,
-                                'progress': None,
                             },
                         },
                     ],

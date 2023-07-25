@@ -66,5 +66,10 @@ class CourseQuery(graphene.ObjectType):
                                               filterset_class=CourseFilterSet)
     latest_courses = relay.ConnectionField(CourseConnection)
 
+    def resolve_all_courses(root, info, **kwargs):
+        return Course.objects.filter(**{
+            'is_published': True,
+        })
+
     def resolve_latest_courses(root, info, **kwargs):
         return Course.objects.order_by('-created_at')

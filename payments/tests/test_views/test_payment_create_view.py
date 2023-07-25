@@ -43,7 +43,7 @@ class PaymentCreateViewTestCase(APITestCase):
             'title': 'q' * 50,
         })
 
-        Course.objects.create(**{
+        cls.course = Course.objects.create(**{
             'id': 1,
             'teacher': teacher,
             'title': 'q' * 50,
@@ -55,6 +55,7 @@ class PaymentCreateViewTestCase(APITestCase):
             'category': category,
             'preview': 'temporary_img',
             'short_description': 'q' * 50,
+            'is_published': True,
         })
 
         with ConnectionProxy(connections, 'master').cursor() as c:
@@ -135,6 +136,25 @@ class PaymentCreateViewTestCase(APITestCase):
             self):
         response = self.logged_client.post(self.url, data={})
         serializer = self.serializer(data={})
+        serializer.is_valid()
+
+        expected_status = status.HTTP_400_BAD_REQUEST
+        real_status = response.status_code
+
+        expected_data = serializer.errors
+        real_data = response.data
+
+        self.assertEqual(expected_status, real_status)
+        self.assertEqual(expected_data, real_data)
+
+    def test_When_PostForPaymentCreateWithArchiveCourse_Should_ErrorWith400(
+            self):
+        self.course.is_published = False
+        self.course.save()
+
+        data = self.data
+        response = self.logged_client.post(self.url, data=data)
+        serializer = self.serializer(data=data)
         serializer.is_valid()
 
         expected_status = status.HTTP_400_BAD_REQUEST
