@@ -70,7 +70,7 @@ class CourseSerializerTestCase(TestCase):
         expected_fields = [
             'id', 'title', 'price', 'count_lectures', 'count_independents',
             'learning_format', 'category', 'teacher', 'preview',
-            'short_description', 'body',
+            'short_description', 'body', 'is_published',
         ]
         real_fields = list(self.tested_class().get_fields())
 
@@ -265,6 +265,7 @@ class CourseSerializerTestCase(TestCase):
             'category': 2,
             'short_description': 'w' * 50,
             'body': 'w' * 50,
+            'is_published': False,
         }
         real_data = dict(update_serializer.data)
 

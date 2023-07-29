@@ -16,7 +16,7 @@ class CourseSerializer(ModelSerializer):
         fields = (
             'id', 'title', 'price', 'count_lectures', 'count_independents',
             'learning_format', 'category', 'teacher', 'preview',
-            'short_description', 'body',
+            'short_description', 'body', 'is_published',
         )
 
     def create(self, validated_data):

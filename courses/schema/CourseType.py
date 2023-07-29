@@ -72,4 +72,6 @@ class CourseQuery(graphene.ObjectType):
         })
 
     def resolve_latest_courses(root, info, **kwargs):
-        return Course.objects.order_by('-created_at')
+        return Course.objects.filter(**{
+            'is_published': True,
+        }).order_by('-created_at')

@@ -1,13 +1,8 @@
 # IDE
 /.idea
 
+# Configs
 /.*
-
-# misc
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
 # Unit test / coverage reports
 htmlcov/

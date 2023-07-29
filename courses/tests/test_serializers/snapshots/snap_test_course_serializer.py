@@ -17,4 +17,5 @@ snapshots['CourseSerializerTestCase::test_Should_SpecificFormatForEachField 1'] 
     teacher = PrimaryKeyRelatedField(allow_null=True, help_text='The teacher who leads the course.', queryset=Teacher.objects.all(), required=False)
     preview = Base64ImageField(required=False)
     short_description = CharField(help_text='A few words about the course, shown on the course icon.', max_length=255, required=False)
-    body = CharField(source='course_body.body')'''
+    body = CharField(source='course_body.body')
+    is_published = BooleanField(help_text='Course is published.', required=False)'''

@@ -1,55 +1,70 @@
-<!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     {% load static %}
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="{% static 'css.css' %}">
+    <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
     <title>{{ title }}</title>
+    <style>
+        @page {
+            size: A4 letter landscape;
+            @frame content_frame {
+                left: 40pt;
+                width: 1000pt;
+                top: 40pt;
+                height: 540pt;
+            }
+        }
+
+        @font-face {
+            font-family: SourceSansPro;
+            src: url('https://unicat.umbreella-dev.ru/static/docs/Alice-Regular.ttf');
+        }
+
+        * {
+            font-size: 16pt;
+            font-family: SourceSansPro, sans-serif;
+        }
+    </style>
 </head>
 <body>
-    <div style="display: flex; height: 740px; font-size: 25px;">
-        <div class="comment_button" style="width: 250px;">
-            <div style="height: 100%; text-align: center;"></div>
-        </div>
-        <div style="flex-grow: 1; margin-left: 15px; margin-right: 15px;">
-            <div style="height: 740px;">
-                <div style="height: 200px;"></div>
-                <div style="height: 400px;">
-                    <div>
-                        Настоящий сертификат подтверждает, что
-                    </div>
-                    <div style="height: 50px; border-bottom: 1px solid black; line-height: 50px">
-                        {{ user }}
-                    </div>
-                    <div>
-                        успешно завершил/а курс
-                    </div>
-                    <div style="height: 50px; border-bottom: 1px solid black; line-height: 50px">
-                        {{ course }}
-                    </div>
-                </div>
-                <div style="height: 140px; display: flex; flex-wrap: wrap;">
-                    <div style="width: 65%; text-align: end; line-height: 75px;">
-                        преподаватель {{ teacher }}
-                    </div>
-                </div>
+<table>
+    <tr>
+        <td style="width: 150pt;">
+            <img src="https://unicat.umbreella-dev.ru/static/docs/banner.jpg"
+                 style="height: 540pt; width: 140pt;">
+        </td>
+        <td style="width: 450pt;">
+            <div>
+                Настоящий сертификат подтверждает, что
             </div>
-        </div>
-        <div style="width: 175px;">
-            <div style="height: 740px; display: flex; flex-direction: column; justify-content: space-between; text-align: end;">
+            <div style="height: 30pt; border-bottom: 1px solid black;
+            line-height: 30pt; margin-top: 10pt;">
+                {{ user }}
+            </div>
+            <div style="margin-top: 10pt;">
+                успешно завершил/а курс:
+            </div>
+            <div style="height: 30pt; border-bottom: 1px solid black;
+            line-height: 30pt; margin-top: 10pt;">
+                {{ course }}
+            </div>
+            <div style="margin-top: 100pt;">
+                преподаватель {{ teacher }}
+            </div>
+        </td>
+        <td style="width: 110pt; margin-left: 10pt;">
+            <div>
                 <div>
-                    <div>
-                        Завершено
-                    </div>
-                    <div>
-                        {{ progress }}%
-                    </div>
+                    Завершено
                 </div>
                 <div>
-                    {{ completed_at }}
+                    {{ progress }}%
                 </div>
             </div>
-        </div>
-    </div>
+            <div style="margin-top: 460pt;">
+                {{ completed_at }}
+            </div>
+        </td>
+    </tr>
+</table>
 </body>
 </html>

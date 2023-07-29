@@ -1,7 +1,6 @@
 from django.urls import reverse
-from django_weasyprint import WeasyTemplateResponseMixin
 from rest_framework import status
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.serializers import Serializer
 from rest_framework.test import APITestCase
@@ -99,7 +98,7 @@ class UserCertificateViewTestCase(APITestCase):
 
     def test_Should_InheritListApiViewAndWeasyTemplate(self):
         expected_super_classes = (
-            ListAPIView, WeasyTemplateResponseMixin,
+            RetrieveAPIView,
         )
         real_super_classes = self.tested_class.__bases__
 

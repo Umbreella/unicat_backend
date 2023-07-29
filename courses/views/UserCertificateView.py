@@ -1,19 +1,20 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.template.loader import get_template
-from django_weasyprint import WeasyTemplateResponseMixin
 from graphql_relay import from_global_id
+from rest_framework import status
 from rest_framework.exceptions import ValidationError
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.serializers import Serializer
-from weasyprint import CSS, HTML
+from xhtml2pdf import pisa
+from xhtml2pdf.files import pisaFileObject
 
 from ..models.UserCourse import UserCourse
 from ..schema.CourseType import CourseType
 
 
-class UserCertificateView(ListAPIView, WeasyTemplateResponseMixin):
+class UserCertificateView(RetrieveAPIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = Serializer
 
@@ -58,7 +59,7 @@ class UserCertificateView(ListAPIView, WeasyTemplateResponseMixin):
 
         html_template = get_template('Certificate.html')
         context = {
-            'title': 'Custom Title',
+            'title': course.title,
             'user': str(user_data),
             'course': course_data,
             'teacher': teacher_data,
@@ -67,14 +68,18 @@ class UserCertificateView(ListAPIView, WeasyTemplateResponseMixin):
         }
         rendered_html = html_template.render(context)
 
-        html_doc = HTML(string=rendered_html,
-                        base_url=request.build_absolute_uri())
-        styles = CSS(string="""
-        @page {
-            size: landscape;
-            margin: 0.5cm;
-            }
-        """)
-        pdf = html_doc.write_pdf(stylesheets=[styles])
+        filename = f'{course.title}.pdf'
 
-        return HttpResponse(pdf, content_type='application/pdf')
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+        pisaFileObject.getNamedFile = lambda self: self.uri
+        pisa_status = pisa.CreatePDF(**{
+            'src': rendered_html,
+            'dest': response,
+        })
+
+        if pisa_status.err:
+            return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return response

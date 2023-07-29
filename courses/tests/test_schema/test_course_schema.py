@@ -350,11 +350,6 @@ class CourseTypeTestCase(GraphQLTestCase):
                     'edges': [
                         {
                             'node': {
-                                'id': 'Q291cnNlVHlwZToy',
-                            },
-                        },
-                        {
-                            'node': {
                                 'id': 'Q291cnNlVHlwZTox',
                             },
                         },
