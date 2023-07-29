@@ -194,7 +194,7 @@ class UserCertificateViewTestCase(APITestCase):
         expected_status = status.HTTP_200_OK
         real_status = response.status_code
 
-        expected_content_type = 'application/pdf'
+        expected_content_type = 'text/html; charset=utf-8'
         real_content_type = response.headers.get('Content-Type')
 
         self.assertEqual(expected_status, real_status)

@@ -1,14 +1,10 @@
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import HttpResponse
-from django.template.loader import get_template
+from django.shortcuts import render
 from graphql_relay import from_global_id
-from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.serializers import Serializer
-from xhtml2pdf import pisa
-from xhtml2pdf.files import pisaFileObject
 
 from ..models.UserCourse import UserCourse
 from ..schema.CourseType import CourseType
@@ -57,7 +53,6 @@ class UserCertificateView(RetrieveAPIView):
         ])
         teacher_data = str(course.teacher)
 
-        html_template = get_template('Certificate.html')
         context = {
             'title': course.title,
             'user': str(user_data),
@@ -66,20 +61,9 @@ class UserCertificateView(RetrieveAPIView):
             'completed_at': user_course.completed_at.strftime('%d-%m-%Y'),
             'progress': round((count_completed_lessons / count_lessons) * 100),
         }
-        rendered_html = html_template.render(context)
 
-        filename = f'{course.title}.pdf'
-
-        response = HttpResponse(content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
-
-        pisaFileObject.getNamedFile = lambda self: self.uri
-        pisa_status = pisa.CreatePDF(**{
-            'src': rendered_html,
-            'dest': response,
+        return render(**{
+            'request': request,
+            'template_name': 'Certificate.html',
+            'context': context,
         })
-
-        if pisa_status.err:
-            return HttpResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        return response

@@ -1,70 +1,48 @@
 <html>
 <head>
-    {% load static %}
-    <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
-    <title>{{ title }}</title>
-    <style>
-        @page {
-            size: A4 letter landscape;
-            @frame content_frame {
-                left: 40pt;
-                width: 1000pt;
-                top: 40pt;
-                height: 540pt;
-            }
-        }
-
-        @font-face {
-            font-family: SourceSansPro;
-            src: url('https://unicat.umbreella-dev.ru/static/docs/Alice-Regular.ttf');
-        }
-
-        * {
-            font-size: 16pt;
-            font-family: SourceSansPro, sans-serif;
-        }
-    </style>
+    <meta content="text/html; charset=utf-8">
 </head>
 <body>
-<table>
-    <tr>
-        <td style="width: 150pt;">
-            <img src="https://unicat.umbreella-dev.ru/static/docs/banner.jpg"
-                 style="height: 540pt; width: 140pt;">
-        </td>
-        <td style="width: 450pt;">
-            <div>
-                Настоящий сертификат подтверждает, что
-            </div>
-            <div style="height: 30pt; border-bottom: 1px solid black;
-            line-height: 30pt; margin-top: 10pt;">
-                {{ user }}
-            </div>
-            <div style="margin-top: 10pt;">
-                успешно завершил/а курс:
-            </div>
-            <div style="height: 30pt; border-bottom: 1px solid black;
-            line-height: 30pt; margin-top: 10pt;">
-                {{ course }}
-            </div>
-            <div style="margin-top: 100pt;">
-                преподаватель {{ teacher }}
-            </div>
-        </td>
-        <td style="width: 110pt; margin-left: 10pt;">
-            <div>
+<div style="color: black; margin: 10pt; font-size: 16pt;">
+    <table>
+        <tr>
+            <td style="width: 250pt;">
+                <img src="https://unicat.umbreella-dev.ru/static/docs/banner.jpg"
+                     style="height: 530pt; width: 240pt;">
+            </td>
+            <td style="width: 450pt;">
                 <div>
-                    Завершено
+                    Настоящий сертификат подтверждает, что
                 </div>
+                <div style="height: 30pt; border-bottom: 1px solid black;
+            line-height: 30pt; margin-top: 10pt;">
+                    {{ user }}
+                </div>
+                <div style="margin-top: 10pt;">
+                    успешно завершил/а курс:
+                </div>
+                <div style="height: 30pt; line-height: 30pt; margin-top: 10pt;">
+                    {{ course }}
+                </div>
+                <div style="margin-top: 100pt;">
+                    преподаватель {{ teacher }}
+                </div>
+            </td>
+            <td style="width: 110pt; margin-left: 10pt;">
                 <div>
-                    {{ progress }}%
+                    <div>
+                        Завершено
+                    </div>
+                    <div>
+                        {{ progress }}%
+                    </div>
                 </div>
-            </div>
-            <div style="margin-top: 460pt;">
-                {{ completed_at }}
-            </div>
-        </td>
-    </tr>
-</table>
+                <div style="margin-top: 460pt;">
+                    {{ completed_at }}
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>
 </body>
 </html>
