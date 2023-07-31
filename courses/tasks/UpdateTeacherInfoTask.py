@@ -14,6 +14,7 @@ def update_teacher_info_task(teacher_id: int):
     with transaction.atomic(using='master'):
         all_course_by_teacher = Course.objects.using('master').filter(**{
             'teacher_id': teacher_id,
+            'avg_rating__gt': 0,
         }).values_list('id', flat=True)
 
         avg_rating = Course.objects.using('master').filter(**{
@@ -32,7 +33,7 @@ def update_teacher_info_task(teacher_id: int):
             'id': teacher_id,
         })
 
-        teacher.avg_rating = avg_rating
+        teacher.avg_rating = float(avg_rating)
         teacher.count_reviews = count_reviews
         teacher.save()
 

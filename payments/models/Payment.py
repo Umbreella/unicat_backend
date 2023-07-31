@@ -46,7 +46,7 @@ class Payment(models.Model):
 
     def save(self, *args, **kwargs):
         if isinstance(self.amount, float):
-            self.amount = str(self.amount)
+            self.amount = str(round(self.amount, 2))
 
         self.full_clean()
         super().save(*args, **kwargs)

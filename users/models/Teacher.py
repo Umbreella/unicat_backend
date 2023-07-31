@@ -56,7 +56,7 @@ class Teacher(models.Model):
 
     def save(self, *args, **kwargs):
         if isinstance(self.avg_rating, float):
-            self.avg_rating = str(self.avg_rating)
+            self.avg_rating = round(self.avg_rating, 1)
 
         self.full_clean()
         super().save(*args, **kwargs)

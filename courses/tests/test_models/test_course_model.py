@@ -288,14 +288,18 @@ class CourseModelTestCase(TestCase):
         course = self.tested_class(**data)
         course.save()
 
+        second_course = self.tested_class(**data)
+        second_course.save()
+
         course_stat = course.statistic
         course_stat.count_five_rating = 1
+        course_stat.count_four_rating = 2
         course_stat.save()
 
         self.teacher.refresh_from_db()
 
-        expected_average_rating = 5
-        real_average_rating = self.teacher.avg_rating
+        expected_average_rating = 4.3
+        real_average_rating = float(self.teacher.avg_rating)
 
         self.assertEqual(expected_average_rating, real_average_rating)
 
