@@ -7,8 +7,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from stripe.api_resources.payment_intent import PaymentIntent
 
-from courses.models.Discount import Discount
-
 from ..models.Payment import Payment
 from ..serializers.PaymentCourseSerializer import PaymentCourseSerializer
 
@@ -27,7 +25,7 @@ class PaymentCreateView(CreateAPIView):
         course = serializer.course
         price = course.price
 
-        discount = Discount.objects.filter(**{
+        discount = course.discounts.filter(**{
             'start_date__lte': timezone.now(),
             'end_date__gte': timezone.now(),
         }).first()
